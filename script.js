@@ -75,7 +75,7 @@ const defaultSongs = [
 
 // データベース連携用の変数
 let songDatabase = [];
-let editingSongId = null;
+let editingSongId = null; // 現在編集中の楽曲ID
 
 // Firestoreからデータを読み込む関数
 async function loadSongsFromFirebase() {
@@ -92,6 +92,7 @@ async function loadSongsFromFirebase() {
         songDatabase.push({ id: docRef.id, ...song });
       }
     }
+    renderAdminSongList();
   } catch (error) {
     console.error("Firebaseデータ取得エラー:", error);
     alert("データの読み込みに失敗しました。");
@@ -126,22 +127,27 @@ const screens = {
 function showScreen(screenKey) {
   Object.values(screens).forEach(screen => screen.classList.remove("active"));
   screens[screenKey].classList.add("active");
+  if (screenKey === "admin") {
+    renderAdminSongList();
+  }
 }
 
 // ---- カテゴリー・年代連動 ----
 const categorySelect = document.getElementById("category-select");
 const eraGroup = document.getElementById("era-group");
 
-categorySelect.addEventListener("change", () => {
-  if (categorySelect.value === "era") {
-    eraGroup.classList.remove("hidden");
-  } else {
-    eraGroup.classList.add("hidden");
-  }
-});
+if (categorySelect) {
+  categorySelect.addEventListener("change", () => {
+    if (categorySelect.value === "era") {
+      eraGroup.classList.remove("hidden");
+    } else {
+      eraGroup.classList.add("hidden");
+    }
+  });
+}
 
 // ---- ゲーム開始処理 ----
-document.getElementById("start-btn").addEventListener("click", () => {
+document.getElementById("start-btn")?.addEventListener("click", () => {
   const category = categorySelect.value;
   const era = document.getElementById("era-select").value;
   const part = document.getElementById("part-select").value;
@@ -160,10 +166,4 @@ document.getElementById("start-btn").addEventListener("click", () => {
       if (era === "2012~2015") return year >= 2012 && year <= 2015;
       if (era === "2016~2018") return year >= 2016 && year <= 2018;
       if (era === "2019~2021") return year >= 2019 && year <= 2021;
-      if (era === "2022~") return year >= 2022;
-    }
-    return true;
-  });
-
-  if (filtered.length === 0) {
-    alert("条件に一致する曲が登録されていません。別の条件を選ぶか曲を追加してください。"
+      if (era ===
