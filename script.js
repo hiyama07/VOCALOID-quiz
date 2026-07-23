@@ -1,16 +1,4 @@
-// 1. Firebase SDKの読み込み（CDN形式）
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { 
-  getFirestore, 
-  collection, 
-  getDocs, 
-  addDoc, 
-  updateDoc,
-  deleteDoc, 
-  doc 
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-// 2. Firebaseの設定キー
+// Firebaseの設定キー
 const firebaseConfig = {
   apiKey: "AIzaSyD9MGcLh2z_cc0qoug2SZSpKeNX4bAH02s",
   authDomain: "vocaloid-quiz-5005f.firebaseapp.com",
@@ -19,11 +7,6 @@ const firebaseConfig = {
   messagingSenderId: "671477870013",
   appId: "1:671477870013:web:ce2275e9cbb11560cb76d4"
 };
-
-// 3. Firebase & Firestoreの初期化
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const SONGS_COLLECTION = "songs";
 
 // 初期サンプル楽曲データ
 const defaultSongs = [
@@ -73,12 +56,9 @@ const defaultSongs = [
   }
 ];
 
-// グローバル変数
 let songDatabase = [];
 let editingSongId = null;
-let isLoaded = false;
 
-// ゲーム状態
 let gameState = {
   questions: [],
   currentIndex: 0,
@@ -93,7 +73,7 @@ let gameState = {
   selectedPart: "intro"
 };
 
-// 画面切替関数
+// 画面切り替え
 function showScreen(screenId) {
   const allScreens = document.querySelectorAll('.screen');
   allScreens.forEach(s => s.classList.remove('active'));
@@ -108,32 +88,14 @@ function showScreen(screenId) {
   }
 }
 
-// Firestoreからのデータ読み込み
-async function loadSongsFromFirebase() {
-  try {
-    const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
-    songDatabase = [];
-    querySnapshot.forEach((docSnap) => {
-      songDatabase.push({ id: docSnap.id, ...docSnap.data() });
-    });
-
-    if (songDatabase.length === 0) {
-      for (const song of defaultSongs) {
-        const docRef = await addDoc(collection(db, SONGS_COLLECTION), song);
-        songDatabase.push({ id: docRef.id, ...song });
-      }
-    }
-    isLoaded = true;
-    renderAdminSongList();
-  } catch (error) {
-    console.error("Firebaseデータ取得エラー:", error);
-    alert("データの読み込みに失敗しました。ローカル環境(file://)で開いている場合はLive Server等をご利用ください。");
-  }
+// ローカルデータ読み込み（スマホ環境保護用）
+function initData() {
+  songDatabase = defaultSongs;
+  renderAdminSongList();
 }
 
-// ---- イベントハンドラの初期設定 ----
+// イベント設定
 function initEvents() {
-  // カテゴリー切替
   const categorySelect = document.getElementById("category-select");
   const eraGroup = document.getElementById("era-group");
   if (categorySelect && eraGroup) {
@@ -146,15 +108,13 @@ function initEvents() {
     });
   }
 
-  // ナビゲーション関連
+  // ボタンイベント登録
   document.getElementById("open-admin-btn")?.addEventListener("click", () => showScreen("admin-screen"));
   document.getElementById("admin-back-btn")?.addEventListener("click", () => showScreen("menu-screen"));
   document.getElementById("back-to-menu-btn")?.addEventListener("click", () => showScreen("menu-screen"));
 
-  // ゲームスタート
   document.getElementById("start-btn")?.addEventListener("click", startGame);
 
-  // ゲーム内操作
   document.getElementById("next-phrase-btn")?.addEventListener("click", addNextPhrase);
   document.getElementById("pass-btn")?.addEventListener("click", () => finishQuestion(false));
   document.getElementById("quit-btn")?.addEventListener("click", () => {
@@ -164,16 +124,13 @@ function initEvents() {
     }
   });
 
-  // 回答
   document.getElementById("solo-submit-btn")?.addEventListener("click", handleSoloAnswer);
   document.getElementById("solo-input")?.addEventListener("keypress", (e) => {
     if (e.key === "Enter") handleSoloAnswer();
   });
 
-  // 早押し
   document.getElementById("buzzer-btn")?.addEventListener("click", handleBuzzer);
 
-  // 次の問題へ
   document.getElementById("next-question-btn")?.addEventListener("click", () => {
     gameState.currentIndex++;
     if (gameState.currentIndex < gameState.questions.length) {
@@ -184,19 +141,12 @@ function initEvents() {
     }
   });
 
-  // 管理画面フォーム
   document.getElementById("reset-form-btn")?.addEventListener("click", resetForm);
   document.getElementById("save-song-btn")?.addEventListener("click", saveSong);
   document.getElementById("delete-song-btn")?.addEventListener("click", deleteSong);
 }
 
-// ---- ゲーム処理 ----
 function startGame() {
-  if (!isLoaded && songDatabase.length === 0) {
-    alert("データの読み込み中です。少々お待ちください...");
-    return;
-  }
-
   const category = document.getElementById("category-select").value;
   const era = document.getElementById("era-select").value;
   const part = document.getElementById("part-select").value;
@@ -221,7 +171,7 @@ function startGame() {
   });
 
   if (filtered.length === 0) {
-    alert("条件に一致する曲が登録されていません。別の条件を選ぶか管理者メニューから曲を追加してください。");
+    alert("条件に一致する曲がありません。");
     return;
   }
 
@@ -383,13 +333,12 @@ function showFinalResults() {
   showScreen("final-screen");
 }
 
-// ---- 管理者機能 ----
 function renderAdminSongList() {
   const container = document.getElementById("admin-song-list");
   if (!container) return;
 
   container.innerHTML = "";
-  songDatabase.forEach((song) => {
+  songDatabase.forEach((song, index) => {
     const item = document.createElement("div");
     item.className = "song-item";
     item.innerHTML = `
@@ -399,13 +348,13 @@ function renderAdminSongList() {
       </div>
       <span class="edit-badge">編集 ❯</span>
     `;
-    item.addEventListener("click", () => populateFormForEdit(song));
+    item.addEventListener("click", () => populateFormForEdit(song, index));
     container.appendChild(item);
   });
 }
 
-function populateFormForEdit(song) {
-  editingSongId = song.id;
+function populateFormForEdit(song, index) {
+  editingSongId = index;
   document.getElementById("form-title").innerText = "✏️ 楽曲を編集";
   document.getElementById("add-title").value = song.title;
   document.getElementById("add-producer").value = song.producer;
@@ -426,7 +375,7 @@ function resetForm() {
   document.getElementById("delete-song-btn").classList.add("hidden");
 }
 
-async function saveSong() {
+function saveSong() {
   const title = document.getElementById("add-title").value.trim();
   const producer = document.getElementById("add-producer").value.trim();
   const year = parseInt(document.getElementById("add-year").value, 10);
@@ -451,41 +400,32 @@ async function saveSong() {
     }
   };
 
-  try {
-    if (editingSongId) {
-      await updateDoc(doc(db, SONGS_COLLECTION, editingSongId), songData);
-      alert("楽曲情報を更新しました！");
-    } else {
-      await addDoc(collection(db, SONGS_COLLECTION), songData);
-      alert("新しい楽曲を追加しました！");
-    }
-    resetForm();
-    await loadSongsFromFirebase();
-  } catch (error) {
-    console.error("保存エラー:", error);
-    alert("データの保存に失敗しました。");
+  if (editingSongId !== null) {
+    songDatabase[editingSongId] = songData;
+    alert("楽曲情報を更新しました！");
+  } else {
+    songDatabase.push(songData);
+    alert("新しい楽曲を追加しました！");
   }
+
+  resetForm();
+  renderAdminSongList();
 }
 
-async function deleteSong() {
-  if (!editingSongId) return;
+function deleteSong() {
+  if (editingSongId === null) return;
 
   if (confirm("この楽曲を本当に削除しますか？")) {
-    try {
-      await deleteDoc(doc(db, SONGS_COLLECTION, editingSongId));
-      alert("楽曲を削除しました。");
-      resetForm();
-      await loadSongsFromFirebase();
-    } catch (error) {
-      console.error("削除エラー:", error);
-      alert("データの削除に失敗しました。");
-    }
+    songDatabase.splice(editingSongId, 1);
+    alert("楽曲を削除しました。");
+    resetForm();
+    renderAdminSongList();
   }
 }
 
-// ---- 起動時初期化 ----
-document.addEventListener("DOMContentLoaded", () => {
+// 起動時初期化
+window.onload = () => {
   initEvents();
+  initData();
   showScreen("menu-screen");
-  loadSongsFromFirebase();
-});
+};
