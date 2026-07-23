@@ -8,6 +8,7 @@ import {
   updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Firebase設定
 const firebaseConfig = {
   apiKey: "AIzaSyD9MGcLh2z_cc0qoug2SZSpKeNX4bAH02s",
   authDomain: "vocaloid-quiz-5005f.firebaseapp.com",
@@ -71,7 +72,7 @@ const defaultSongs = [
 
 let songDatabase = [];
 
-// Firestore から楽曲を取得（空の場合はサンプル曲を自動登録）
+// Firestore から楽曲を取得（未登録の初期楽曲があれば自動補填）
 async function loadSongsFromFirebase() {
   try {
     const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
@@ -84,12 +85,19 @@ async function loadSongsFromFirebase() {
       });
     });
 
-    // Firestoreに楽曲が1件も存在しない場合は初期曲をFirebaseへ投入
-    if (songDatabase.length === 0) {
-      for (const song of defaultSongs) {
+    // 初期楽曲がデータベースに不足している場合は補填
+    let hasAddedNew = false;
+    for (const song of defaultSongs) {
+      const exists = songDatabase.some(s => s.title === song.title);
+      if (!exists) {
         const docRef = await addDoc(collection(db, SONGS_COLLECTION), song);
         songDatabase.push({ id: docRef.id, ...song });
+        hasAddedNew = true;
       }
+    }
+
+    if (hasAddedNew) {
+      console.log("初期楽曲をFirestoreへ同期しました。");
     }
   } catch (error) {
     console.error("Firestore読み込みエラー:", error);
@@ -97,7 +105,7 @@ async function loadSongsFromFirebase() {
   }
 }
 
-// ゲーム状態
+// ゲーム状態管理
 let gameState = {
   questions: [],
   currentIndex: 0,
@@ -136,6 +144,7 @@ categorySelect.addEventListener("change", () => {
   }
 });
 
+// スタートボタン処理
 document.getElementById("start-btn").addEventListener("click", () => {
   const category = categorySelect.value;
   const era = document.getElementById("era-select").value;
@@ -361,15 +370,18 @@ document.getElementById("back-to-menu-btn").addEventListener("click", () => {
   showScreen("menu");
 });
 
+// 管理者メニュー操作
 const adminMsg = document.getElementById("admin-msg");
 const addTitleInput = document.getElementById("add-title");
 
+// 管理者メニューを開く
 document.getElementById("open-admin-btn").addEventListener("click", () => {
   adminMsg.classList.add("hidden");
   renderSongList();
   showScreen("admin");
 });
 
+// 管理者メニューから「戻る」ボタン
 document.getElementById("close-admin-btn").addEventListener("click", () => {
   showScreen("menu");
 });
@@ -392,7 +404,7 @@ addTitleInput.addEventListener("input", () => {
   }
 });
 
-// 新規追加
+// 新規追加処理
 document.getElementById("add-song-form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -440,6 +452,7 @@ document.getElementById("add-song-form").addEventListener("submit", async (e) =>
   }
 });
 
+// 管理者画面の曲一覧描画（初期曲含む全件が表示されます）
 function renderSongList() {
   const container = document.getElementById("song-list-container");
   if (!container) return;
@@ -455,7 +468,7 @@ function renderSongList() {
 
     item.innerHTML = `
       <summary>
-        🎵 ${song.title}
+        🎵 ${song.title} (${song.producer || 'ボカロP未設定'})
       </summary>
       <div class="edit-form-content">
         <label>タイトル:
@@ -491,6 +504,7 @@ function renderSongList() {
   });
 }
 
+// データ更新処理
 async function updateSong(index) {
   const targetSong = songDatabase[index];
   const parseText = (id) => document.getElementById(id).value.split(/\r?\n|\r/).map(s => s.trim()).filter(s => s.length > 0);
@@ -531,5 +545,5 @@ async function updateSong(index) {
   }
 }
 
-// アプリ起動時にFirebaseから取得
+// 起動時にデータ読み込み実行
 loadSongsFromFirebase();
