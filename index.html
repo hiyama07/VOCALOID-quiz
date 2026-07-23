@@ -3,189 +3,192 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- ✨ タブ名を修正 -->
-  <title>ボカロ歌詞クイズ</title>
+  <title>ボカロ歌詞イントロクイズ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
 
+  <div class="container">
     <!-- 1. メニュー画面 -->
     <div id="menu-screen" class="screen active">
-      <!-- ✨ タイトルを修正 -->
-      <h1>🎵 ボカロ歌詞クイズ</h1>
+      <h1>ボカロ歌詞クイズ</h1>
       
       <div class="setting-group">
-        <label for="category-select">カテゴリー：</label>
+        <label for="category-select">カテゴリ</label>
         <select id="category-select">
-          <option value="all">すべて</option>
-          <option value="halloffame">殿堂入り限定</option>
+          <option value="all">全曲</option>
+          <option value="halloffame">殿堂入り / 伝説入り</option>
           <option value="era">年代別</option>
         </select>
       </div>
 
       <div id="era-group" class="setting-group hidden">
-        <label for="era-select">年代：</label>
+        <label for="era-select">年代選択</label>
         <select id="era-select">
-          <option value="~2011">~2011年 (初期)</option>
-          <option value="2012~2015">2012~2015年 (黄金期)</option>
-          <option value="2016~2018">2016~2018年 (隆盛期)</option>
-          <option value="2019~2021">2019~2021年 (現代)</option>
-          <option value="2022~">2022年~ (最新)</option>
+          <option value="~2011">~ 2011年 (初期)</option>
+          <option value="2012~2015">2012 ~ 2015年</option>
+          <option value="2016~2018">2016 ~ 2018年</option>
+          <option value="2019~2021">2019 ~ 2021年</option>
+          <option value="2022~">2022年 ~</option>
         </select>
       </div>
 
       <div class="setting-group">
-        <label for="part-select">出題パート：</label>
+        <label for="part-select">出題パート</label>
         <select id="part-select">
-          <option value="intro">歌い始め</option>
+          <option value="intro">イントロ / 冒頭</option>
           <option value="chorus">サビ</option>
-          <option value="prechorus">ラスサビ前</option>
+          <option value="prechorus">Bメロ</option>
         </select>
       </div>
 
       <div class="setting-group">
-        <label for="phrase-mode-select">出題形式：</label>
+        <label for="phrase-mode-select">フレーズ進行</label>
         <select id="phrase-mode-select">
-          <option value="auto">自動 (15秒ごとに1行表示)</option>
-          <option value="manual">手動 (ボタンで次の行を表示)</option>
+          <option value="auto">自動 (15秒ごとに進行)</option>
+          <option value="manual">手動 (ボタンで進める)</option>
         </select>
       </div>
 
       <div class="setting-group">
-        <label for="player-mode-select">プレイ人数：</label>
+        <label for="player-mode-select">プレイモード</label>
         <select id="player-mode-select">
-          <option value="solo">1人で遊ぶ (入力形式)</option>
-          <option value="multi">みんなで遊ぶ (早押し・3択形式)</option>
+          <option value="solo">1人プレイ (入力形式)</option>
+          <option value="multi">みんなでプレイ (早押し形式)</option>
         </select>
       </div>
 
       <div class="setting-group">
-        <label for="count-select">問題数：</label>
+        <label for="count-select">出題数</label>
         <select id="count-select">
           <option value="5">5問</option>
           <option value="10">10問</option>
+          <option value="15">15問</option>
         </select>
       </div>
 
-      <button id="start-btn" class="btn primary">スタート！</button>
-      
+      <button id="start-btn" class="btn primary">ゲームスタート！</button>
+
       <div class="admin-link-wrapper">
-        <button id="open-admin-btn" class="subtle-link-btn">⚙️ 管理者メニュー</button>
+        <button id="open-admin-btn" class="subtle-link-btn">楽曲管理画面へ</button>
       </div>
     </div>
 
-    <!-- 2. ゲーム画面 -->
+    <!-- 2. クイズプレイ画面 -->
     <div id="game-screen" class="screen">
       <div class="game-header">
         <span id="question-progress">第 1 / 5 問</span>
-        <span id="timer-display" class="timer">15</span>
-        <button id="quit-btn" class="quit-btn">✕ 途中でやめる</button>
+        <div id="timer-display" class="timer">15</div>
+        <button id="quit-btn" class="quit-btn">中断</button>
       </div>
 
-      <div id="lyrics-box" class="lyrics-box"></div>
+      <div id="lyrics-box" class="lyrics-box">
+        <!-- 歌詞フレーズが動的に挿入されます -->
+      </div>
 
-      <div id="manual-next-wrapper" class="hidden" style="margin-bottom: 15px;">
+      <div id="manual-next-wrapper" class="hidden">
         <button id="next-phrase-btn" class="btn secondary">次のフレーズを表示</button>
       </div>
 
-      <div id="solo-answer-area" class="answer-area">
-        <input type="text" id="solo-input" placeholder="曲名を入力してください...">
+      <!-- 1人プレイ用解答エリア -->
+      <div id="solo-answer-area" class="setting-group">
+        <input type="text" id="solo-input" placeholder="曲名を入力してください" autocomplete="off">
         <div class="btn-group">
           <button id="solo-submit-btn" class="btn primary">回答する</button>
           <button id="pass-btn" class="btn secondary">パス</button>
         </div>
       </div>
 
-      <div id="multi-answer-area" class="answer-area hidden">
-        <button id="buzzer-btn" class="btn primary buzzer-btn">🔔 早押し！</button>
+      <!-- 複数人プレイ用エリア -->
+      <div id="multi-answer-area" class="setting-group hidden">
+        <button id="buzzer-btn" class="btn primary">わかった！ (早押し)</button>
         <div id="choices-box" class="choices-box hidden">
-          <button class="btn choice-btn"></button>
-          <button class="btn choice-btn"></button>
-          <button class="btn choice-btn"></button>
+          <button class="btn choice-btn secondary"></button>
+          <button class="btn choice-btn secondary"></button>
+          <button class="btn choice-btn secondary"></button>
         </div>
       </div>
     </div>
 
-    <!-- 3. 正解確認画面 -->
+    <!-- 3. 問題結果画面 -->
     <div id="answer-screen" class="screen">
       <h2 id="result-status">⭕ 正解！</h2>
       <div class="song-detail">
-        <p><strong>曲名：</strong><span id="detail-title"></span></p>
-        <p><strong>ボカロP：</strong><span id="detail-producer"></span></p>
-        <p><strong>投稿年：</strong><span id="detail-year"></span></p>
+        <h3 id="detail-title">曲名</h3>
+        <p>ボカロP: <span id="detail-producer">P名</span></p>
+        <p>投稿年: <span id="detail-year">2000年</span></p>
       </div>
       <button id="next-question-btn" class="btn primary">次の問題へ</button>
     </div>
 
-    <!-- 4. 最終結果画面 -->
+    <!-- 4. 最終スコア画面 -->
     <div id="final-screen" class="screen">
-      <h2>🎉 クイズ終了！</h2>
-      <p class="final-score-text">
-        あなたのスコア：<br>
-        <span id="final-score" class="highlight-score">0</span> / <span id="final-total">0</span> 問正解
-      </p>
+      <h2>結果発表</h2>
+      <div class="final-score-text">
+        <p>あなたの正解数は...</p>
+        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">5</span></div>
+      </div>
       <button id="back-to-menu-btn" class="btn primary">メニューに戻る</button>
     </div>
 
-    <!-- 5. 管理者画面 -->
+    <!-- 5. 楽曲管理（管理者）画面 -->
     <div id="admin-screen" class="screen">
-      <h2>⚙️ 管理者メニュー</h2>
-      
-      <form id="add-song-form">
-        <h3>➕ 新しい楽曲を追加</h3>
-        
-        <div id="admin-msg" class="message hidden"></div>
+      <div class="form-header">
+        <h2>楽曲データの管理</h2>
+        <button id="close-admin-btn" class="btn secondary small-btn">戻る</button>
+      </div>
 
-        <div class="form-group">
-          <label for="add-title">曲名：</label>
-          <input type="text" id="add-title" required placeholder="例: カゲロウデイズ">
+      <div id="admin-msg" class="message hidden"></div>
+
+      <!-- 追加フォーム -->
+      <div class="admin-section">
+        <h3>新規楽曲の追加</h3>
+        <form id="add-song-form">
+          <div class="form-group">
+            <label>タイトル *</label>
+            <input type="text" id="add-title" required>
+          </div>
+          <div class="form-group">
+            <label>ボカロP *</label>
+            <input type="text" id="add-producer" required>
+          </div>
+          <div class="form-group">
+            <label>投稿年 *</label>
+            <input type="number" id="add-year" value="2020" required>
+          </div>
+          <div class="form-group checkbox-group">
+            <label><input type="checkbox" id="add-halloffame"> 殿堂入り/伝説入り</label>
+          </div>
+          <div class="form-group">
+            <label>イントロ歌詞 (1行ずつ改行)</label>
+            <textarea id="add-intro" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>サビ歌詞 (1行ずつ改行)</label>
+            <textarea id="add-chorus" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Bメロ歌詞 (1行ずつ改行)</label>
+            <textarea id="add-prechorus" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn primary">楽曲をデータベースへ登録</button>
+        </form>
+      </div>
+
+      <hr class="divider">
+
+      <!-- 一覧と編集 -->
+      <div class="admin-section">
+        <h3>登録済み楽曲一覧</h3>
+        <p style="font-size:0.85rem; color:#94a3b8;">タップして編集ができます</p>
+        <div id="song-list-container" class="song-list-container">
+          <!-- JSで動的生成されます -->
         </div>
-
-        <div class="form-group">
-          <label for="add-producer">ボカロP：</label>
-          <input type="text" id="add-producer" required placeholder="例: じん">
-        </div>
-
-        <div class="form-group">
-          <label for="add-year">投稿年：</label>
-          <input type="number" id="add-year" required value="2011" min="2000" max="2030">
-        </div>
-
-        <div class="form-group checkbox-group">
-          <label>
-            <input type="checkbox" id="add-halloffame" checked> 殿堂入り楽曲
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label for="add-intro">歌い始め歌詞 (改行区切り)：</label>
-          <textarea id="add-intro" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="add-chorus">サビ歌詞 (改行区切り)：</label>
-          <textarea id="add-chorus" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="add-prechorus">ラスサビ前歌詞 (改行区切り)：</label>
-          <textarea id="add-prechorus" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
-
-        <button type="submit" class="btn primary">楽曲を登録する</button>
-      </form>
-
-      <hr style="margin: 25px 0; border: 0; border-top: 1px solid #334155;">
-
-      <h3>📚 登録済み楽曲一覧</h3>
-      <div id="song-list-container" class="song-list" style="margin-bottom: 20px;"></div>
-
-      <button id="close-admin-btn" class="btn secondary">メニューに戻る</button>
+      </div>
     </div>
-
   </div>
 
-  <script src="script.js"></script>
+  <!-- JavaScript（ES Modulesとして読み込み） -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
