@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- ✨ タブ名を修正 -->
   <title>ボカロ歌詞クイズ</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -12,7 +11,6 @@
 
     <!-- 1. メニュー画面 -->
     <div id="menu-screen" class="screen active">
-      <!-- ✨ タイトルを修正 -->
       <h1>🎵 ボカロ歌詞クイズ</h1>
       
       <div class="setting-group">
@@ -147,45 +145,4 @@
           <input type="text" id="add-producer" required placeholder="例: じん">
         </div>
 
-        <div class="form-group">
-          <label for="add-year">投稿年：</label>
-          <input type="number" id="add-year" required value="2011" min="2000" max="2030">
-        </div>
-
-        <div class="form-group checkbox-group">
-          <label>
-            <input type="checkbox" id="add-halloffame" checked> 殿堂入り楽曲
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label for="add-intro">歌い始め歌詞 (改行区切り)：</label>
-          <textarea id="add-intro" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="add-chorus">サビ歌詞 (改行区切り)：</label>
-          <textarea id="add-chorus" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label for="add-prechorus">ラスサビ前歌詞 (改行区切り)：</label>
-          <textarea id="add-prechorus" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
-
-        <button type="submit" class="btn primary">楽曲を登録する</button>
-      </form>
-
-      <hr style="margin: 25px 0; border: 0; border-top: 1px solid #334155;">
-
-      <h3>📚 登録済み楽曲一覧</h3>
-      <div id="song-list-container" class="song-list" style="margin-bottom: 20px;"></div>
-
-      <button id="close-admin-btn" class="btn secondary">メニューに戻る</button>
-    </div>
-
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
+        <div cl
