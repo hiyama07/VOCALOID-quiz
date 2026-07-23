@@ -71,7 +71,7 @@ h3 {
   color: #cbd5e1;
 }
 
-select, input[type="text"], input[type="number"], input[type="password"], textarea {
+select, input[type="text"], input[type="number"], textarea {
   width: 100%;
   padding: 10px 12px;
   background-color: #334155;
@@ -87,7 +87,6 @@ select:focus, input:focus, textarea:focus {
   border-color: #38bdf8;
 }
 
-/* ボタン基本構造 */
 .btn {
   display: inline-flex;
   justify-content: center;
@@ -122,15 +121,6 @@ select:focus, input:focus, textarea:focus {
   background-color: #64748b;
 }
 
-.btn.danger {
-  background-color: #ef4444;
-  color: #ffffff;
-}
-
-.btn.danger:hover {
-  background-color: #f87171;
-}
-
 .small-btn {
   width: auto;
   padding: 6px 12px;
@@ -144,7 +134,6 @@ select:focus, input:focus, textarea:focus {
   box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
 }
 
-/* 控えめなリンクボタン */
 .admin-link-wrapper {
   margin-top: 24px;
   text-align: center;
@@ -164,7 +153,6 @@ select:focus, input:focus, textarea:focus {
   color: #94a3b8;
 }
 
-/* ゲーム画面ヘッダーと途中終了ボタン */
 .game-header {
   display: flex;
   justify-content: space-between;
@@ -196,7 +184,6 @@ select:focus, input:focus, textarea:focus {
   color: #f43f5e;
 }
 
-/* 歌詞表示領域 */
 .lyrics-box {
   background-color: #0f172a;
   border: 1px solid #334155;
@@ -224,7 +211,7 @@ select:focus, input:focus, textarea:focus {
 .btn-group {
   display: flex;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 .choices-box {
@@ -256,7 +243,8 @@ select:focus, input:focus, textarea:focus {
   font-weight: bold;
 }
 
-.checkbox-group label {
+.checkbox-group label,
+.checkbox-label {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -282,7 +270,7 @@ select:focus, input:focus, textarea:focus {
   border: 1px solid #166534;
 }
 
-/* ---- 管理画面スタイル ---- */
+/* 管理画面スタイル */
 .admin-section {
   background: #0f172a;
   padding: 16px;
@@ -292,52 +280,27 @@ select:focus, input:focus, textarea:focus {
 }
 
 .song-list-container {
-  max-height: 250px;
+  max-height: 280px;
   overflow-y: auto;
   margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+details.song-item {
+  background: #1e293b;
   border: 1px solid #334155;
   border-radius: 8px;
-  background-color: #1e293b;
+  overflow: hidden;
 }
 
-.song-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-/* リストアイテム (`li`または`details`) の共通スタイル */
-.song-item {
-  border-bottom: 1px solid #334155;
-  transition: background 0.2s;
-}
-
-.song-item:last-child {
-  border-bottom: none;
-}
-
-/* li形式で使う場合の横並び設定 */
-li.song-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  cursor: pointer;
-}
-
-li.song-item:hover {
-  background: #334155;
-}
-
-/* details形式で使う場合の開閉スタイル */
 details.song-item summary {
   padding: 12px;
+  font-weight: bold;
+  color: #38bdf8;
   cursor: pointer;
   user-select: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
 }
 
 details.song-item summary:hover {
@@ -345,30 +308,14 @@ details.song-item summary:hover {
 }
 
 details.song-item[open] summary {
-  border-bottom: 1px dashed #475569;
-  background: #0f172a;
+  border-bottom: 1px solid #334155;
 }
 
-.song-info {
+.edit-form-content {
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-
-.song-title {
-  font-weight: bold;
-  color: #f8fafc;
-}
-
-.song-sub {
-  font-size: 0.85rem;
-  color: #94a3b8;
-}
-
-.edit-badge {
-  font-size: 0.8rem;
-  color: #38bdf8;
+  gap: 10px;
 }
 
 .form-header {
@@ -382,29 +329,4 @@ details.song-item[open] summary {
   border: none;
   border-top: 1px solid #334155;
   margin: 20px 0;
-}
-
-/* モーダル表示用スタイル (必要に応じて) */
-.modal-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 16px;
-  z-index: 100;
-}
-
-.modal-content {
-  background: #1e293b;
-  padding: 24px;
-  border-radius: 12px;
-  border: 1px solid #475569;
-  width: 90%;
-  max-width: 400px;
 }
