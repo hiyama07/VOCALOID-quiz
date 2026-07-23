@@ -1,16 +1,15 @@
-// 1. Firebase SDKの読み込み（CDN形式）
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+// Firebase SDK のインポート (v9+ Module JS)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getFirestore, 
   collection, 
   getDocs, 
   addDoc, 
-  updateDoc,
-  deleteDoc, 
-  doc 
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  doc, 
+  updateDoc 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 2. Firebaseの設定キー
+// Firebaseの設定情報（登録いただいたプロジェクト情報を適用済み）
 const firebaseConfig = {
   apiKey: "AIzaSyD9MGcLh2z_cc0qoug2SZSpKeNX4bAH02s",
   authDomain: "vocaloid-quiz-5005f.firebaseapp.com",
@@ -20,12 +19,12 @@ const firebaseConfig = {
   appId: "1:671477870013:web:ce2275e9cbb11560cb76d4"
 };
 
-// 3. Firebase & Firestoreの初期化
+// Firebase の初期化
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const SONGS_COLLECTION = "songs";
+const SONGS_COLLECTION = "vocaloid_songs";
 
-// 初期サンプル楽曲データ
+// デフォルトデータ（Firestoreが空の場合の初期登録用）
 const defaultSongs = [
   {
     title: "初音ミクの消失",
@@ -73,10 +72,34 @@ const defaultSongs = [
   }
 ];
 
-// グローバル変数
+// メモリ内のデータベース保持用
 let songDatabase = [];
-let editingSongId = null;
-let isLoaded = false;
+
+// Firestore から楽曲を取得（初回ロード時）
+async function loadSongsFromFirebase() {
+  try {
+    const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
+    songDatabase = [];
+
+    querySnapshot.forEach((docSnap) => {
+      songDatabase.push({
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    // Firestore が空なら初期データを自動投入
+    if (songDatabase.length === 0) {
+      for (const song of defaultSongs) {
+        const docRef = await addDoc(collection(db, SONGS_COLLECTION), song);
+        songDatabase.push({ id: docRef.id, ...song });
+      }
+    }
+  } catch (error) {
+    console.error("Firestore読み込みエラー:", error);
+    alert("データベースの読み込みに失敗しました。Firestoreのセキュリティルールやネットワーク接続をご確認ください。");
+  }
+}
 
 // ゲーム状態
 let gameState = {
@@ -93,111 +116,35 @@ let gameState = {
   selectedPart: "intro"
 };
 
-// 画面切替関数
-function showScreen(screenId) {
-  const allScreens = document.querySelectorAll('.screen');
-  allScreens.forEach(s => s.classList.remove('active'));
-  
-  const target = document.getElementById(screenId);
-  if (target) {
-    target.classList.add('active');
-  }
+// DOM要素の取得
+const screens = {
+  menu: document.getElementById("menu-screen"),
+  game: document.getElementById("game-screen"),
+  answer: document.getElementById("answer-screen"),
+  final: document.getElementById("final-screen"),
+  admin: document.getElementById("admin-screen")
+};
 
-  if (screenId === "admin-screen") {
-    renderAdminSongList();
-  }
+function showScreen(screenKey) {
+  Object.values(screens).forEach(screen => screen.classList.remove("active"));
+  screens[screenKey].classList.add("active");
 }
 
-// Firestoreからのデータ読み込み
-async function loadSongsFromFirebase() {
-  try {
-    const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
-    songDatabase = [];
-    querySnapshot.forEach((docSnap) => {
-      songDatabase.push({ id: docSnap.id, ...docSnap.data() });
-    });
+// カテゴリー・年代連動
+const categorySelect = document.getElementById("category-select");
+const eraGroup = document.getElementById("era-group");
 
-    if (songDatabase.length === 0) {
-      for (const song of defaultSongs) {
-        const docRef = await addDoc(collection(db, SONGS_COLLECTION), song);
-        songDatabase.push({ id: docRef.id, ...song });
-      }
-    }
-    isLoaded = true;
-    renderAdminSongList();
-  } catch (error) {
-    console.error("Firebaseデータ取得エラー:", error);
-    alert("データの読み込みに失敗しました。ローカル環境(file://)で開いている場合はLive Server等をご利用ください。");
+categorySelect.addEventListener("change", () => {
+  if (categorySelect.value === "era") {
+    eraGroup.classList.remove("hidden");
+  } else {
+    eraGroup.classList.add("hidden");
   }
-}
+});
 
-// ---- イベントハンドラの初期設定 ----
-function initEvents() {
-  // カテゴリー切替
-  const categorySelect = document.getElementById("category-select");
-  const eraGroup = document.getElementById("era-group");
-  if (categorySelect && eraGroup) {
-    categorySelect.addEventListener("change", () => {
-      if (categorySelect.value === "era") {
-        eraGroup.classList.remove("hidden");
-      } else {
-        eraGroup.classList.add("hidden");
-      }
-    });
-  }
-
-  // ナビゲーション関連
-  document.getElementById("open-admin-btn")?.addEventListener("click", () => showScreen("admin-screen"));
-  document.getElementById("admin-back-btn")?.addEventListener("click", () => showScreen("menu-screen"));
-  document.getElementById("back-to-menu-btn")?.addEventListener("click", () => showScreen("menu-screen"));
-
-  // ゲームスタート
-  document.getElementById("start-btn")?.addEventListener("click", startGame);
-
-  // ゲーム内操作
-  document.getElementById("next-phrase-btn")?.addEventListener("click", addNextPhrase);
-  document.getElementById("pass-btn")?.addEventListener("click", () => finishQuestion(false));
-  document.getElementById("quit-btn")?.addEventListener("click", () => {
-    if (confirm("クイズを中断してメニューに戻りますか？")) {
-      clearInterval(gameState.timerInterval);
-      showScreen("menu-screen");
-    }
-  });
-
-  // 回答
-  document.getElementById("solo-submit-btn")?.addEventListener("click", handleSoloAnswer);
-  document.getElementById("solo-input")?.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") handleSoloAnswer();
-  });
-
-  // 早押し
-  document.getElementById("buzzer-btn")?.addEventListener("click", handleBuzzer);
-
-  // 次の問題へ
-  document.getElementById("next-question-btn")?.addEventListener("click", () => {
-    gameState.currentIndex++;
-    if (gameState.currentIndex < gameState.questions.length) {
-      showScreen("game-screen");
-      loadQuestion();
-    } else {
-      showFinalResults();
-    }
-  });
-
-  // 管理画面フォーム
-  document.getElementById("reset-form-btn")?.addEventListener("click", resetForm);
-  document.getElementById("save-song-btn")?.addEventListener("click", saveSong);
-  document.getElementById("delete-song-btn")?.addEventListener("click", deleteSong);
-}
-
-// ---- ゲーム処理 ----
-function startGame() {
-  if (!isLoaded && songDatabase.length === 0) {
-    alert("データの読み込み中です。少々お待ちください...");
-    return;
-  }
-
-  const category = document.getElementById("category-select").value;
+// ゲーム開始処理
+document.getElementById("start-btn").addEventListener("click", () => {
+  const category = categorySelect.value;
   const era = document.getElementById("era-select").value;
   const part = document.getElementById("part-select").value;
   const phraseMode = document.getElementById("phrase-mode-select").value;
@@ -221,7 +168,7 @@ function startGame() {
   });
 
   if (filtered.length === 0) {
-    alert("条件に一致する曲が登録されていません。別の条件を選ぶか管理者メニューから曲を追加してください。");
+    alert("条件に一致する曲が登録されていません。別の条件を選ぶか曲を追加してください。");
     return;
   }
 
@@ -236,9 +183,9 @@ function startGame() {
   gameState.selectedPart = part;
 
   setupUIForModes();
-  showScreen("game-screen");
+  showScreen("game");
   loadQuestion();
-}
+});
 
 function setupUIForModes() {
   const soloArea = document.getElementById("solo-answer-area");
@@ -270,7 +217,7 @@ function loadQuestion() {
   
   const current = gameState.questions[gameState.currentIndex];
   gameState.currentSong = current;
-  gameState.currentPhrases = current.lyrics[gameState.selectedPart] || [];
+  gameState.currentPhrases = current.lyrics[gameState.selectedPart];
   gameState.displayedPhraseCount = 0;
 
   document.getElementById("question-progress").innerText = 
@@ -323,6 +270,20 @@ function startTimer() {
   }, 1000);
 }
 
+document.getElementById("next-phrase-btn").addEventListener("click", addNextPhrase);
+
+document.getElementById("quit-btn").addEventListener("click", () => {
+  if (confirm("クイズを中断してメニューに戻りますか？")) {
+    clearInterval(gameState.timerInterval);
+    showScreen("menu");
+  }
+});
+
+document.getElementById("solo-submit-btn").addEventListener("click", handleSoloAnswer);
+document.getElementById("solo-input").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") handleSoloAnswer();
+});
+
 function handleSoloAnswer() {
   const input = document.getElementById("solo-input").value.trim().toLowerCase();
   const correct = gameState.currentSong.title.trim().toLowerCase();
@@ -331,7 +292,7 @@ function handleSoloAnswer() {
   finishQuestion(isCorrect);
 }
 
-function handleBuzzer() {
+document.getElementById("buzzer-btn").addEventListener("click", () => {
   clearInterval(gameState.timerInterval);
   document.getElementById("buzzer-btn").classList.add("hidden");
 
@@ -353,139 +314,233 @@ function handleBuzzer() {
   const btns = choicesBox.querySelectorAll(".choice-btn");
   btns.forEach((btn, idx) => {
     if (options[idx]) {
-      btn.innerText = options[idx];
       btn.style.display = "block";
-      btn.onclick = () => finishQuestion(options[idx] === correctTitle);
+      btn.innerText = options[idx];
+      btn.onclick = () => {
+        const isCorrect = (options[idx] === correctTitle);
+        finishQuestion(isCorrect);
+      };
     } else {
       btn.style.display = "none";
     }
   });
-}
+});
 
-function finishQuestion(isCorrect) {
+document.getElementById("pass-btn").addEventListener("click", () => {
+  finishQuestion(false, true);
+});
+
+function finishQuestion(isCorrect, isPass = false) {
   clearInterval(gameState.timerInterval);
 
   if (isCorrect) {
     gameState.score++;
+    document.getElementById("result-status").innerText = "⭕ 正解！";
+    document.getElementById("result-status").style.color = "#4ade80";
+  } else if (isPass) {
+    document.getElementById("result-status").innerText = "⏩ パス";
+    document.getElementById("result-status").style.color = "#94a3b8";
+  } else {
+    document.getElementById("result-status").innerText = "❌ 不正解...";
+    document.getElementById("result-status").style.color = "#f87171";
   }
 
-  document.getElementById("result-status").innerText = isCorrect ? "⭕ 正解！" : "❌ 不正解...";
   document.getElementById("detail-title").innerText = gameState.currentSong.title;
   document.getElementById("detail-producer").innerText = gameState.currentSong.producer;
-  document.getElementById("detail-year").innerText = `${gameState.currentSong.year} 年`;
+  document.getElementById("detail-year").innerText = gameState.currentSong.year + "年";
 
-  showScreen("answer-screen");
+  showScreen("answer");
 }
 
-function showFinalResults() {
-  document.getElementById("final-score").innerText = gameState.score;
-  document.getElementById("final-total").innerText = gameState.questions.length;
-  showScreen("final-screen");
-}
+document.getElementById("next-question-btn").addEventListener("click", () => {
+  gameState.currentIndex++;
+  if (gameState.currentIndex < gameState.questions.length) {
+    showScreen("game");
+    loadQuestion();
+  } else {
+    document.getElementById("final-score").innerText = gameState.score;
+    document.getElementById("final-total").innerText = gameState.questions.length;
+    showScreen("final");
+  }
+});
 
-// ---- 管理者機能 ----
-function renderAdminSongList() {
-  const container = document.getElementById("admin-song-list");
-  if (!container) return;
+document.getElementById("back-to-menu-btn").addEventListener("click", () => {
+  showScreen("menu");
+});
 
-  container.innerHTML = "";
-  songDatabase.forEach((song) => {
-    const item = document.createElement("div");
-    item.className = "song-item";
-    item.innerHTML = `
-      <div class="song-info">
-        <span class="song-title">${song.title}</span>
-        <span class="song-sub">${song.producer} (${song.year}年)</span>
-      </div>
-      <span class="edit-badge">編集 ❯</span>
-    `;
-    item.addEventListener("click", () => populateFormForEdit(song));
-    container.appendChild(item);
-  });
-}
+// 管理者画面の操作
+const adminMsg = document.getElementById("admin-msg");
+const addTitleInput = document.getElementById("add-title");
 
-function populateFormForEdit(song) {
-  editingSongId = song.id;
-  document.getElementById("form-title").innerText = "✏️ 楽曲を編集";
-  document.getElementById("add-title").value = song.title;
-  document.getElementById("add-producer").value = song.producer;
-  document.getElementById("add-year").value = song.year;
-  document.getElementById("add-halloffame").checked = !!song.hallOfFame;
+document.getElementById("open-admin-btn").addEventListener("click", () => {
+  adminMsg.classList.add("hidden");
+  renderSongList();
+  showScreen("admin");
+});
 
-  document.getElementById("add-intro").value = (song.lyrics?.intro || []).join("\n");
-  document.getElementById("add-prechorus").value = (song.lyrics?.prechorus || []).join("\n");
-  document.getElementById("add-chorus").value = (song.lyrics?.chorus || []).join("\n");
+document.getElementById("close-admin-btn").addEventListener("click", () => {
+  showScreen("menu");
+});
 
-  document.getElementById("delete-song-btn").classList.remove("hidden");
-}
+addTitleInput.addEventListener("input", () => {
+  const title = addTitleInput.value.trim();
+  if (title === "") {
+    adminMsg.classList.add("hidden");
+    return;
+  }
 
-function resetForm() {
-  editingSongId = null;
-  document.getElementById("form-title").innerText = "➕ 新しい楽曲を追加";
-  document.getElementById("add-song-form").reset();
-  document.getElementById("delete-song-btn").classList.add("hidden");
-}
+  const isDuplicate = songDatabase.some(song => song.title.toLowerCase() === title.toLowerCase());
 
-async function saveSong() {
-  const title = document.getElementById("add-title").value.trim();
+  if (isDuplicate) {
+    adminMsg.innerText = "⚠️ この楽曲は既に登録されています！";
+    adminMsg.className = "message error";
+    adminMsg.classList.remove("hidden");
+  } else {
+    adminMsg.classList.add("hidden");
+  }
+});
+
+// Firebaseへ新規追加
+document.getElementById("add-song-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const title = addTitleInput.value.trim();
   const producer = document.getElementById("add-producer").value.trim();
   const year = parseInt(document.getElementById("add-year").value, 10);
   const hallOfFame = document.getElementById("add-halloffame").checked;
 
-  if (!title || !producer || isNaN(year)) {
-    alert("曲名、ボカロP、投稿年は必須項目です。");
+  const parseText = (id) => document.getElementById(id).value.split(/\r?\n|\r/).map(s => s.trim()).filter(s => s.length > 0);
+
+  const intro = parseText("add-intro");
+  const chorus = parseText("add-chorus");
+  const prechorus = parseText("add-prechorus");
+
+  const isDuplicate = songDatabase.some(song => song.title.toLowerCase() === title.toLowerCase());
+
+  if (isDuplicate) {
+    adminMsg.innerText = "⚠️ 既に追加済みです！別の曲名を入力してください。";
+    adminMsg.className = "message error";
+    adminMsg.classList.remove("hidden");
     return;
   }
 
-  const parseLyrics = (id) => document.getElementById(id).value.split("\n").map(l => l.trim()).filter(l => l !== "");
-
-  const songData = {
+  const newSong = {
     title,
     producer,
     year,
     hallOfFame,
+    lyrics: { intro, chorus, prechorus }
+  };
+
+  try {
+    const docRef = await addDoc(collection(db, SONGS_COLLECTION), newSong);
+    songDatabase.push({ id: docRef.id, ...newSong });
+
+    adminMsg.innerText = `✅ 「${title}」をFirestoreへ追加しました！`;
+    adminMsg.className = "message success";
+    adminMsg.classList.remove("hidden");
+
+    document.getElementById("add-song-form").reset();
+    renderSongList();
+  } catch (error) {
+    console.error("追加エラー:", error);
+    alert("データの追加に失敗しました。");
+  }
+});
+
+// 楽曲一覧のレンダリング
+function renderSongList() {
+  const container = document.getElementById("song-list-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  songDatabase.forEach((song, index) => {
+    const item = document.createElement("details");
+    item.className = "song-item";
+
+    const introText = (song.lyrics && song.lyrics.intro) ? song.lyrics.intro.join("\n") : "";
+    const chorusText = (song.lyrics && song.lyrics.chorus) ? song.lyrics.chorus.join("\n") : "";
+    const prechorusText = (song.lyrics && song.lyrics.prechorus) ? song.lyrics.prechorus.join("\n") : "";
+
+    item.innerHTML = `
+      <summary>
+        🎵 ${song.title}
+      </summary>
+      <div class="edit-form-content">
+        <label>タイトル:
+          <input type="text" id="edit-title-${index}" value="${song.title}">
+        </label>
+        <label>ボカロP:
+          <input type="text" id="edit-producer-${index}" value="${song.producer || ''}">
+        </label>
+        <label>投稿年:
+          <input type="number" id="edit-year-${index}" value="${song.year || 2011}">
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="edit-halloffame-${index}" ${song.hallOfFame ? 'checked' : ''}> 殿堂入り
+        </label>
+        <label>イントロ歌詞 (改行区切り):
+          <textarea id="edit-intro-${index}" rows="3">${introText}</textarea>
+        </label>
+        <label>サビ歌詞 (改行区切り):
+          <textarea id="edit-chorus-${index}" rows="3">${chorusText}</textarea>
+        </label>
+        <label>Bメロ歌詞 (改行区切り):
+          <textarea id="edit-prechorus-${index}" rows="3">${prechorusText}</textarea>
+        </label>
+        <button id="save-btn-${index}" class="btn primary small-btn">変更を保存</button>
+      </div>
+    `;
+
+    container.appendChild(item);
+
+    // 保存ボタンのイベントリスナー設定
+    document.getElementById(`save-btn-${index}`).addEventListener("click", () => {
+      updateSong(index);
+    });
+  });
+}
+
+// Firebaseの更新関数
+async function updateSong(index) {
+  const targetSong = songDatabase[index];
+  const parseText = (id) => document.getElementById(id).value.split(/\r?\n|\r/).map(s => s.trim()).filter(s => s.length > 0);
+
+  const updatedTitle = document.getElementById(`edit-title-${index}`).value.trim();
+  const updatedProducer = document.getElementById(`edit-producer-${index}`).value.trim();
+  const updatedYear = parseInt(document.getElementById(`edit-year-${index}`).value, 10);
+  const updatedHallOfFame = document.getElementById(`edit-halloffame-${index}`).checked;
+
+  if (!updatedTitle) {
+    alert("タイトルを入力してください");
+    return;
+  }
+
+  const updatedData = {
+    title: updatedTitle,
+    producer: updatedProducer,
+    year: updatedYear,
+    hallOfFame: updatedHallOfFame,
     lyrics: {
-      intro: parseLyrics("add-intro"),
-      prechorus: parseLyrics("add-prechorus"),
-      chorus: parseLyrics("add-chorus")
+      intro: parseText(`edit-intro-${index}`),
+      chorus: parseText(`edit-chorus-${index}`),
+      prechorus: parseText(`edit-prechorus-${index}`)
     }
   };
 
   try {
-    if (editingSongId) {
-      await updateDoc(doc(db, SONGS_COLLECTION, editingSongId), songData);
-      alert("楽曲情報を更新しました！");
-    } else {
-      await addDoc(collection(db, SONGS_COLLECTION), songData);
-      alert("新しい楽曲を追加しました！");
+    if (targetSong.id) {
+      const songRef = doc(db, SONGS_COLLECTION, targetSong.id);
+      await updateDoc(songRef, updatedData);
     }
-    resetForm();
-    await loadSongsFromFirebase();
+    songDatabase[index] = { id: targetSong.id, ...updatedData };
+    alert(`「${updatedTitle}」の情報を更新しました！`);
+    renderSongList();
   } catch (error) {
-    console.error("保存エラー:", error);
-    alert("データの保存に失敗しました。");
+    console.error("更新エラー:", error);
+    alert("データの更新に失敗しました。");
   }
 }
 
-async function deleteSong() {
-  if (!editingSongId) return;
-
-  if (confirm("この楽曲を本当に削除しますか？")) {
-    try {
-      await deleteDoc(doc(db, SONGS_COLLECTION, editingSongId));
-      alert("楽曲を削除しました。");
-      resetForm();
-      await loadSongsFromFirebase();
-    } catch (error) {
-      console.error("削除エラー:", error);
-      alert("データの削除に失敗しました。");
-    }
-  }
-}
-
-// ---- 起動時初期化 ----
-document.addEventListener("DOMContentLoaded", () => {
-  initEvents();
-  showScreen("menu-screen");
-  loadSongsFromFirebase();
-});
+// 起動時にFirebaseからデータを読み込む
+loadSongsFromFirebase();
