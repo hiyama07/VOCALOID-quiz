@@ -166,4 +166,169 @@ document.getElementById("start-btn")?.addEventListener("click", () => {
       if (era === "2012~2015") return year >= 2012 && year <= 2015;
       if (era === "2016~2018") return year >= 2016 && year <= 2018;
       if (era === "2019~2021") return year >= 2019 && year <= 2021;
-      if (era ===
+      if (era === "2022~") return year >= 2022;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    alert("条件に一致する曲が登録されていません。別の条件を選ぶか曲を追加してください。");
+    return;
+  }
+
+  filtered.sort(() => Math.random() - 0.5);
+  const questions = filtered.slice(0, Math.min(count, filtered.length));
+
+  gameState.questions = questions;
+  gameState.currentIndex = 0;
+  gameState.score = 0;
+  gameState.mode = playerMode;
+  gameState.phraseMode = phraseMode;
+  gameState.selectedPart = part;
+
+  setupUIForModes();
+  showScreen("game");
+  loadQuestion();
+});
+
+// モード別のUI調整
+function setupUIForModes() {
+  const soloArea = document.getElementById("solo-answer-area");
+  const multiArea = document.getElementById("multi-answer-area");
+  const timerDisplay = document.getElementById("timer-display");
+  const manualWrapper = document.getElementById("manual-next-wrapper");
+
+  if (gameState.mode === "solo") {
+    soloArea.classList.remove("hidden");
+    multiArea.classList.add("hidden");
+  } else {
+    soloArea.classList.add("hidden");
+    multiArea.classList.remove("hidden");
+    document.getElementById("buzzer-btn").classList.remove("hidden");
+    document.getElementById("choices-box").classList.add("hidden");
+  }
+
+  if (gameState.phraseMode === "auto") {
+    timerDisplay.classList.remove("hidden");
+    manualWrapper.classList.add("hidden");
+  } else {
+    timerDisplay.classList.add("hidden");
+    manualWrapper.classList.remove("hidden");
+  }
+}
+
+// ---- 問題読み込み ----
+function loadQuestion() {
+  clearInterval(gameState.timerInterval);
+  
+  const current = gameState.questions[gameState.currentIndex];
+  gameState.currentSong = current;
+  gameState.currentPhrases = current.lyrics[gameState.selectedPart];
+  gameState.displayedPhraseCount = 0;
+
+  document.getElementById("question-progress").innerText = 
+    `第 ${gameState.currentIndex + 1} / ${gameState.questions.length} 問`;
+
+  document.getElementById("lyrics-box").innerHTML = "";
+  document.getElementById("solo-input").value = "";
+
+  if (gameState.mode === "multi") {
+    document.getElementById("buzzer-btn").classList.remove("hidden");
+    document.getElementById("choices-box").classList.add("hidden");
+  }
+
+  addNextPhrase();
+
+  if (gameState.phraseMode === "auto") {
+    startTimer();
+  }
+}
+
+// フレーズの追加表示
+function addNextPhrase() {
+  if (gameState.displayedPhraseCount < gameState.currentPhrases.length) {
+    const box = document.getElementById("lyrics-box");
+    const line = document.createElement("div");
+    line.className = "lyric-line";
+    line.innerText = gameState.currentPhrases[gameState.displayedPhraseCount];
+    box.appendChild(line);
+    gameState.displayedPhraseCount++;
+  }
+}
+
+// 15秒タイマー
+function startTimer() {
+  gameState.timeLeft = 15;
+  const timerDisplay = document.getElementById("timer-display");
+  timerDisplay.innerText = gameState.timeLeft;
+
+  gameState.timerInterval = setInterval(() => {
+    gameState.timeLeft--;
+    timerDisplay.innerText = gameState.timeLeft;
+
+    if (gameState.timeLeft <= 0) {
+      if (gameState.displayedPhraseCount < gameState.currentPhrases.length) {
+        addNextPhrase();
+        gameState.timeLeft = 15;
+        timerDisplay.innerText = gameState.timeLeft;
+      } else {
+        clearInterval(gameState.timerInterval);
+      }
+    }
+  }, 1000);
+}
+
+// 手動で次のフレーズを表示
+document.getElementById("next-phrase-btn")?.addEventListener("click", () => {
+  addNextPhrase();
+});
+
+// パスボタン処理
+document.getElementById("pass-btn")?.addEventListener("click", () => {
+  finishQuestion(false);
+});
+
+// 途中でやめる処理
+document.getElementById("quit-btn")?.addEventListener("click", () => {
+  if (confirm("クイズを中断してメニューに戻りますか？")) {
+    clearInterval(gameState.timerInterval);
+    showScreen("menu");
+  }
+});
+
+// ---- 1人モード：回答処理 ----
+document.getElementById("solo-submit-btn")?.addEventListener("click", handleSoloAnswer);
+document.getElementById("solo-input")?.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") handleSoloAnswer();
+});
+
+function handleSoloAnswer() {
+  const input = document.getElementById("solo-input").value.trim().toLowerCase();
+  const correct = gameState.currentSong.title.trim().toLowerCase();
+
+  const isCorrect = input !== "" && (correct.includes(input) || input.includes(correct));
+  finishQuestion(isCorrect);
+}
+
+// ---- 複数人モード：早押し・選択肢処理 ----
+document.getElementById("buzzer-btn")?.addEventListener("click", () => {
+  clearInterval(gameState.timerInterval);
+  document.getElementById("buzzer-btn").classList.add("hidden");
+
+  const choicesBox = document.getElementById("choices-box");
+  choicesBox.classList.remove("hidden");
+
+  const correctTitle = gameState.currentSong.title;
+  let otherSongs = songDatabase
+    .map(s => s.title)
+    .filter(t => t !== correctTitle)
+    .sort(() => Math.random() - 0.5);
+
+  let options = [correctTitle];
+  if (otherSongs.length > 0) options.push(otherSongs[0]);
+  if (otherSongs.length > 1) options.push(otherSongs[1]);
+
+  options.sort(() => Math.random() - 0.5);
+
+  const btns = choicesBox.querySelectorAll(".choice-btn");
+  btns.forEach((btn, idx)
