@@ -1,4 +1,4 @@
-// Firebase SDKの読み込み
+// Firebase SDKの読み込み（バージョンを統一して安定化）
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getFirestore, 
@@ -24,7 +24,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SONGS_COLLECTION = "songs";
 
-// デフォルト楽曲（データベースが空の時に自動登録されます）
+// デフォルト楽曲（修正版）
 const defaultSongs = [
   {
     title: "メルト",
@@ -34,7 +34,7 @@ const defaultSongs = [
     lyrics: {
       intro: ["朝 目が覚めて", "真っ先に思い浮かぶ", "君のこと"],
       chorus: ["メルト 溶けてしまいそう", "好きだなんて絶対に言えない", "だけど メルト", "目も合わせられない"],
-      prechorus: ["お願い時間を止めて","泣きそうなの","でも嬉しくて","死んでしまうわ！"]
+      prechorus: ["お願い時間を止めて", "泣きそうなの", "でも嬉しくて", "死んでしまうわ！"]
     }
   },
   {
@@ -54,9 +54,9 @@ const defaultSongs = [
     year: 2011,
     hallOfFame: true,
     lyrics: {
-      intro: ["8月15日の午後12時半くらいのこと", "天気が良い", "病気になりそうなほど眩しい日差しの中"することも無いから君と駄弁っていた"],
-      chorus: ["バッと通ったトラックが","君を轢きずって泣き叫ぶ","血飛沫の色","君の香りと混ざり合ってむせ返った","嘘みたいな陽炎が","「嘘じゃないぞ」って嗤ってる"],
-      prechorus: ["何度世界が眩んでも","陽炎が嗤って奪い去る","繰り返して何十年。","もうとっくに気が付いていたろ。","こんなよくある話なら","結末はきっと1つだけ。","繰り返した夏の日の向こう。"]
+      intro: ["8月15日の午後12時半くらいのこと", "天気が良い", "病気になりそうなほど眩しい日差しの中", "することも無いから君と駄弁っていた"],
+      chorus: ["バッと通ったトラックが", "君を轢きずって泣き叫ぶ", "血飛沫の色", "君の香りと混ざり合ってむせ返った", "嘘みたいな陽炎が", "「嘘じゃないぞ」って嗤ってる"],
+      prechorus: ["何度世界が眩んでも", "陽炎が嗤って奪い去る", "繰り返して何十年。", "もうとっくに気が付いていたろ。", "こんなよくある話なら", "結末はきっと1つだけ。", "繰り返した夏の日の向こう。"]
     }
   }
 ];
@@ -86,7 +86,7 @@ function showScreen(targetScreen) {
   targetScreen.classList.add('active');
 }
 
-// データベースから楽曲を取得（無ければ初期データを送信）
+// データベースから楽曲を取得（データが無い場合は初期化）
 async function loadSongsFromFirebase() {
   try {
     const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
@@ -103,7 +103,7 @@ async function loadSongsFromFirebase() {
     }
   } catch (error) {
     console.error("データ取得エラー:", error);
-    alert("データの読み込みに失敗しました。設定を確認してください。");
+    alert("データの読み込みに失敗しました。ページを再読み込みしてください。");
   }
 }
 
@@ -162,8 +162,3 @@ function startQuiz() {
 
   let filtered = [...songs];
 
-  if (category === 'halloffame') {
-    filtered = filtered.filter(s => s.hallOfFame);
-  } else if (category === 'era') {
-    filtered = filtered.filter(s => {
-   
