@@ -33,12 +33,13 @@
         </select>
       </div>
 
+      <!-- パート選択（表記修正） -->
       <div class="setting-group">
         <label for="part-select">出題パート</label>
         <select id="part-select">
-          <option value="intro">イントロ / 冒頭</option>
+          <option value="intro">歌い始め</option>
           <option value="chorus">サビ</option>
-          <option value="prechorus">Bメロ</option>
+          <option value="prechorus">ラスサビ前</option>
         </select>
       </div>
 
@@ -82,15 +83,12 @@
         <button id="quit-btn" class="quit-btn">中断</button>
       </div>
 
-      <div id="lyrics-box" class="lyrics-box">
-        <!-- 歌詞フレーズが動的に挿入されます -->
-      </div>
+      <div id="lyrics-box" class="lyrics-box"></div>
 
       <div id="manual-next-wrapper" class="hidden">
         <button id="next-phrase-btn" class="btn secondary">次のフレーズを表示</button>
       </div>
 
-      <!-- 1人プレイ用解答エリア -->
       <div id="solo-answer-area" class="setting-group">
         <input type="text" id="solo-input" placeholder="曲名を入力してください" autocomplete="off">
         <div class="btn-group">
@@ -99,7 +97,6 @@
         </div>
       </div>
 
-      <!-- 複数人プレイ用エリア -->
       <div id="multi-answer-area" class="setting-group hidden">
         <button id="buzzer-btn" class="btn primary">わかった！ (早押し)</button>
         <div id="choices-box" class="choices-box hidden">
@@ -140,7 +137,6 @@
 
       <div id="admin-msg" class="message hidden"></div>
 
-      <!-- 追加フォーム -->
       <div class="admin-section">
         <h3>新規楽曲の追加</h3>
         <form id="add-song-form">
@@ -160,7 +156,7 @@
             <label><input type="checkbox" id="add-halloffame"> 殿堂入り/伝説入り</label>
           </div>
           <div class="form-group">
-            <label>イントロ歌詞 (1行ずつ改行)</label>
+            <label>歌い始め歌詞 (1行ずつ改行)</label>
             <textarea id="add-intro" rows="3"></textarea>
           </div>
           <div class="form-group">
@@ -168,7 +164,7 @@
             <textarea id="add-chorus" rows="3"></textarea>
           </div>
           <div class="form-group">
-            <label>Bメロ歌詞 (1行ずつ改行)</label>
+            <label>ラスサビ前歌詞 (1行ずつ改行)</label>
             <textarea id="add-prechorus" rows="3"></textarea>
           </div>
           <button type="submit" class="btn primary">楽曲をデータベースへ登録</button>
@@ -177,18 +173,14 @@
 
       <hr class="divider">
 
-      <!-- 一覧と編集 -->
       <div class="admin-section">
         <h3>登録済み楽曲一覧</h3>
         <p style="font-size:0.85rem; color:#94a3b8;">タップして編集ができます</p>
-        <div id="song-list-container" class="song-list-container">
-          <!-- JSで動的生成されます -->
-        </div>
+        <div id="song-list-container" class="song-list-container"></div>
       </div>
     </div>
   </div>
 
-  <!-- JavaScript（ES Modulesとして読み込み） -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
