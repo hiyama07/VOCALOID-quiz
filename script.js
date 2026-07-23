@@ -5,6 +5,7 @@ import {
   collection, 
   getDocs, 
   addDoc, 
+  updateDoc,
   deleteDoc, 
   doc 
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -74,8 +75,9 @@ const defaultSongs = [
 
 // データベース連携用の変数
 let songDatabase = [];
+let editingSongId = null; // 現在編集中の楽曲ID
 
-// Firestoreからデータを読み込む関数（初回データが無い場合は初期化）
+// Firestoreからデータを読み込む関数
 async function loadSongsFromFirebase() {
   try {
     const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
@@ -84,7 +86,6 @@ async function loadSongsFromFirebase() {
       songDatabase.push({ id: docSnap.id, ...docSnap.data() });
     });
 
-    // 初回アクセス等でデータベースが空の場合、初期データを投入
     if (songDatabase.length === 0) {
       for (const song of defaultSongs) {
         const docRef = await addDoc(collection(db, SONGS_COLLECTION), song);
@@ -93,7 +94,7 @@ async function loadSongsFromFirebase() {
     }
   } catch (error) {
     console.error("Firebaseデータ取得エラー:", error);
-    alert("データの読み込みに失敗しました。ページを再読み込みしてください。");
+    alert("データの読み込みに失敗しました。");
   }
 }
 
@@ -328,154 +329,3 @@ document.getElementById("buzzer-btn").addEventListener("click", () => {
         finishQuestion(isCorrect);
       };
     } else {
-      btn.style.display = "none";
-    }
-  });
-});
-
-// パスボタン処理
-document.getElementById("pass-btn").addEventListener("click", () => {
-  finishQuestion(false, true);
-});
-
-// ---- 正解判定＆結果画面遷移 ----
-function finishQuestion(isCorrect, isPass = false) {
-  clearInterval(gameState.timerInterval);
-
-  if (isCorrect) {
-    gameState.score++;
-    document.getElementById("result-status").innerText = "⭕ 正解！";
-    document.getElementById("result-status").style.color = "#4ade80";
-  } else if (isPass) {
-    document.getElementById("result-status").innerText = "⏩ パス";
-    document.getElementById("result-status").style.color = "#94a3b8";
-  } else {
-    document.getElementById("result-status").innerText = "❌ 不正解...";
-    document.getElementById("result-status").style.color = "#f87171";
-  }
-
-  document.getElementById("detail-title").innerText = gameState.currentSong.title;
-  document.getElementById("detail-producer").innerText = gameState.currentSong.producer;
-  document.getElementById("detail-year").innerText = gameState.currentSong.year + "年";
-
-  showScreen("answer");
-}
-
-// ---- 次の問題へ / 最終結果画面 ----
-document.getElementById("next-question-btn").addEventListener("click", () => {
-  gameState.currentIndex++;
-  if (gameState.currentIndex < gameState.questions.length) {
-    showScreen("game");
-    loadQuestion();
-  } else {
-    document.getElementById("final-score").innerText = gameState.score;
-    document.getElementById("final-total").innerText = gameState.questions.length;
-    showScreen("final");
-  }
-});
-
-// メニューに戻るボタン処理
-document.getElementById("back-to-menu-btn").addEventListener("click", () => {
-  showScreen("menu");
-});
-
-// ---- 管理者機能（Firestoreへの追加・削除連携） ----
-document.getElementById("open-admin-btn").addEventListener("click", () => {
-  renderAdminSongList();
-  showScreen("admin");
-});
-
-document.getElementById("close-admin-btn").addEventListener("click", () => {
-  showScreen("menu");
-});
-
-// 楽曲追加フォーム
-document.getElementById("add-song-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const parseText = (id) => {
-    const val = document.getElementById(id).value.trim();
-    return val ? val.split("\n").map(s => s.trim()).filter(s => s) : [];
-  };
-
-  const newSong = {
-    title: document.getElementById("add-title").value.trim(),
-    producer: document.getElementById("add-producer").value.trim(),
-    year: parseInt(document.getElementById("add-year").value, 10),
-    hallOfFame: document.getElementById("add-halloffame").checked,
-    lyrics: {
-      intro: parseText("add-intro"),
-      chorus: parseText("add-chorus"),
-      prechorus: parseText("add-prechorus")
-    }
-  };
-
-  try {
-    const docRef = await addDoc(collection(db, SONGS_COLLECTION), newSong);
-    songDatabase.push({ id: docRef.id, ...newSong });
-
-    const msg = document.getElementById("admin-msg");
-    msg.innerText = `「${newSong.title}」を追加しました！`;
-    msg.classList.remove("hidden");
-
-    document.getElementById("add-song-form").reset();
-    document.getElementById("add-year").value = 2011;
-    document.getElementById("add-halloffame").checked = true;
-
-    renderAdminSongList();
-
-    setTimeout(() => {
-      msg.classList.add("hidden");
-    }, 3000);
-  } catch (err) {
-    console.error("楽曲追加エラー:", err);
-    alert("楽曲の追加に失敗しました。");
-  }
-});
-
-// 登録済み楽曲一覧の描画と削除処理
-function renderAdminSongList() {
-  const container = document.getElementById("song-list-container");
-  container.innerHTML = "";
-
-  if (songDatabase.length === 0) {
-    container.innerHTML = '<p style="color:#94a3b8;">登録されている楽曲はありません。</p>';
-    return;
-  }
-
-  songDatabase.forEach((song) => {
-    const item = document.createElement("div");
-    item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px; background:#0f172a; border-radius:6px; margin-bottom:8px; border:1px solid #334155;";
-
-    item.innerHTML = `
-      <div>
-        <strong>${song.title}</strong> / ${song.producer} (${song.year}年)
-      </div>
-      <button class="delete-btn" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">削除</button>
-    `;
-
-    item.querySelector(".delete-btn").addEventListener("click", async () => {
-      if (confirm(`「${song.title}」を削除してもよろしいですか？`)) {
-        try {
-          if (song.id) {
-            await deleteDoc(doc(db, SONGS_COLLECTION, song.id));
-          }
-          songDatabase = songDatabase.filter(s => s !== song);
-          renderAdminSongList();
-        } catch (err) {
-          console.error("削除エラー:", err);
-          alert("削除に失敗しました。");
-        }
-      }
-    });
-
-    container.appendChild(item);
-  });
-}
-
-// アプリの初期起動処理
-async function init() {
-  await loadSongsFromFirebase();
-}
-
-init();
