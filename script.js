@@ -45,7 +45,7 @@ const defaultSongs = [
     lyrics: {
       intro: ["大胆不敵にハイカラ革命", "磊々落々反戦国家", "日の丸印の二輪車転がし", "悪霊退散 ICBM"],
       chorus: ["千本桜 夜ニ紛レ", "君ノ声モ届カナイヨ", "此処は宴 鋼の檻", "その断頭台で見下ろして"],
-      prechorus: ["百戦錬磨の見た目は将校", "いざ往かん 宴の夜"]
+      prechorus: ["環状線を走り抜けて", "東奔西走なんのその 少年少女戦国無双浮世の随に"]
     }
   },
   {
@@ -162,3 +162,158 @@ function startQuiz() {
 
   let filtered = [...songs];
 
+  if (category === 'halloffame') {
+    filtered = filtered.filter(s => s.hallOfFame);
+  } else if (category === 'era') {
+    filtered = filtered.filter(s => {
+      const y = s.year;
+      if (era === '~2011') return y <= 2011;
+      if (era === '2012~2015') return y >= 2012 && y <= 2015;
+      if (era === '2016~2018') return y >= 2016 && y <= 2018;
+      if (era === '2019~2021') return y >= 2019 && y <= 2021;
+      if (era === '2022~') return y >= 2022;
+      return true;
+    });
+  }
+
+  if (filtered.length === 0) {
+    alert('条件に一致する楽曲がありません。設定を変更してください。');
+    return;
+  }
+
+  filtered.sort(() => Math.random() - 0.5);
+  currentQuizList = filtered.slice(0, Math.min(count, filtered.length));
+  currentQuestionIndex = 0;
+  score = 0;
+
+  showScreen(screens.game);
+  loadQuestion();
+}
+
+// 問題の読み込み
+function loadQuestion() {
+  clearInterval(autoPhraseInterval);
+  clearInterval(soloTimerInterval);
+
+  const currentSong = currentQuizList[currentQuestionIndex];
+  const part = document.getElementById('part-select').value;
+  const phraseMode = document.getElementById('phrase-mode-select').value;
+  const playerMode = document.getElementById('player-mode-select').value;
+
+  document.getElementById('question-progress').textContent = `第 ${currentQuestionIndex + 1} / ${currentQuizList.length} 問`;
+  
+  const lyricsBox = document.getElementById('lyrics-box');
+  lyricsBox.innerHTML = '';
+  currentPhraseIndex = 0;
+
+  const phrases = currentSong.lyrics && currentSong.lyrics[part] ? currentSong.lyrics[part] : ["（該当パートの歌詞が未登録です）"];
+
+  const appendPhrase = (text) => {
+    const p = document.createElement('p');
+    p.className = 'lyric-line';
+    p.textContent = text;
+    lyricsBox.appendChild(p);
+  };
+
+  appendPhrase(phrases[0]);
+
+  const manualNextWrapper = document.getElementById('manual-next-wrapper');
+  if (phraseMode === 'manual' && phrases.length > 1) {
+    manualNextWrapper.classList.remove('hidden');
+  } else {
+    manualNextWrapper.classList.add('hidden');
+  }
+
+  if (phraseMode === 'auto' && phrases.length > 1) {
+    autoPhraseInterval = setInterval(() => {
+      currentPhraseIndex++;
+      if (currentPhraseIndex < phrases.length) {
+        appendPhrase(phrases[currentPhraseIndex]);
+      } else {
+        clearInterval(autoPhraseInterval);
+      }
+    }, 15000);
+  }
+
+  const soloArea = document.getElementById('solo-answer-area');
+  const multiArea = document.getElementById('multi-answer-area');
+  const choicesBox = document.getElementById('choices-box');
+  const buzzerBtn = document.getElementById('buzzer-btn');
+  const timerDisplay = document.getElementById('timer-display');
+
+  if (playerMode === 'solo') {
+    soloArea.classList.remove('hidden');
+    multiArea.classList.add('hidden');
+    document.getElementById('solo-input').value = '';
+
+    soloTimeLeft = 15;
+    timerDisplay.textContent = soloTimeLeft;
+    soloTimerInterval = setInterval(() => {
+      soloTimeLeft--;
+      timerDisplay.textContent = soloTimeLeft;
+      if (soloTimeLeft <= 0) {
+        clearInterval(soloTimerInterval);
+        showAnswer(false);
+      }
+    }, 1000);
+
+  } else {
+    soloArea.classList.add('hidden');
+    multiArea.classList.remove('hidden');
+    choicesBox.classList.add('hidden');
+    buzzerBtn.classList.remove('hidden');
+    timerDisplay.textContent = '--';
+  }
+}
+
+function showNextPhrase() {
+  const currentSong = currentQuizList[currentQuestionIndex];
+  const part = document.getElementById('part-select').value;
+  const phrases = (currentSong.lyrics && currentSong.lyrics[part]) || [];
+
+  currentPhraseIndex++;
+  if (currentPhraseIndex < phrases.length) {
+    const lyricsBox = document.getElementById('lyrics-box');
+    const p = document.createElement('p');
+    p.className = 'lyric-line';
+    p.textContent = phrases[currentPhraseIndex];
+    lyricsBox.appendChild(p);
+  }
+
+  if (currentPhraseIndex >= phrases.length - 1) {
+    document.getElementById('manual-next-wrapper').classList.add('hidden');
+  }
+}
+
+function handleSoloSubmit() {
+  const input = document.getElementById('solo-input').value.trim();
+  const currentSong = currentQuizList[currentQuestionIndex];
+  const isCorrect = input.toLowerCase() === currentSong.title.toLowerCase();
+  showAnswer(isCorrect);
+}
+
+function handlePass() {
+  showAnswer(false);
+}
+
+function handleBuzzer() {
+  document.getElementById('buzzer-btn').classList.add('hidden');
+  const choicesBox = document.getElementById('choices-box');
+  choicesBox.classList.remove('hidden');
+
+  const currentSong = currentQuizList[currentQuestionIndex];
+  let dummySongs = songs.filter(s => s.id !== currentSong.id);
+  dummySongs.sort(() => Math.random() - 0.5);
+
+  let choices = [currentSong];
+  if (dummySongs.length > 0) choices.push(dummySongs[0]);
+  if (dummySongs.length > 1) choices.push(dummySongs[1]);
+
+  choices.sort(() => Math.random() - 0.5);
+
+  const btns = choicesBox.querySelectorAll('.choice-btn');
+  btns.forEach((btn, idx) => {
+    if (choices[idx]) {
+      btn.style.display = 'block';
+      btn.textContent = choices[idx].title;
+ 
