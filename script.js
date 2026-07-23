@@ -1,5 +1,32 @@
+// 1. Firebase SDKの読み込み（CDN形式）
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  addDoc, 
+  deleteDoc, 
+  doc 
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// 2. Firebaseの設定キー
+const firebaseConfig = {
+  apiKey: "AIzaSyD9MGcLh2z_cc0qoug2SZSpKeNX4bAH02s",
+  authDomain: "vocaloid-quiz-5005f.firebaseapp.com",
+  projectId: "vocaloid-quiz-5005f",
+  storageBucket: "vocaloid-quiz-5005f.firebasestorage.app",
+  messagingSenderId: "671477870013",
+  appId: "1:671477870013:web:ce2275e9cbb11560cb76d4"
+};
+
+// 3. Firebase & Firestoreの初期化
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const SONGS_COLLECTION = "songs";
+
 // 初期サンプル楽曲データ
-const defaultSongs = [  {
+const defaultSongs = [
+  {
     title: "初音ミクの消失",
     producer: "cosMo@暴走P",
     year: 2008,
@@ -38,20 +65,36 @@ const defaultSongs = [  {
     year: 2020,
     hallOfFame: true,
     lyrics: {
-      intro: ["エマージェンシー","0時 奴らは","クレイジー・インザ・タウン","家に篭って ゴロゴロゴロゴロと",
-"堕落の夜に絡みついた"],
-      chorus: ["引き籠り 絶対 ジャスティス","俺の私だけの折 の中で",
-"聴き殺してランデブー","俺の私の音が君に染まるまで"],
+      intro: ["エマージェンシー","0時 奴らは","クレイジー・インザ・タウン","家に篭って ゴロゴロゴロゴロと","堕落の夜に絡みついた"],
+      chorus: ["引き籠り 絶対 ジャスティス","俺の私だけの折 の中で","聴き殺してランデブー","俺の私の音が君に染まるまで"],
       prechorus: ["相も変わらずJamる街","止まぬNervous に 拐われないで"]
     }
   }
 ];
 
-// ローカルストレージからの読み込み
-let songDatabase = JSON.parse(localStorage.getItem("vocaloid_quiz_songs")) || defaultSongs;
+// データベース連携用の変数
+let songDatabase = [];
 
-function saveDatabase() {
-  localStorage.setItem("vocaloid_quiz_songs", JSON.stringify(songDatabase));
+// Firestoreからデータを読み込む関数（初回データが無い場合は初期化）
+async function loadSongsFromFirebase() {
+  try {
+    const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
+    songDatabase = [];
+    querySnapshot.forEach((docSnap) => {
+      songDatabase.push({ id: docSnap.id, ...docSnap.data() });
+    });
+
+    // 初回アクセス等でデータベースが空の場合、初期データを投入
+    if (songDatabase.length === 0) {
+      for (const song of defaultSongs) {
+        const docRef = await addDoc(collection(db, SONGS_COLLECTION), song);
+        songDatabase.push({ id: docRef.id, ...song });
+      }
+    }
+  } catch (error) {
+    console.error("Firebaseデータ取得エラー:", error);
+    alert("データの読み込みに失敗しました。ページを再読み込みしてください。");
+  }
 }
 
 // ゲーム状態
@@ -106,7 +149,7 @@ document.getElementById("start-btn").addEventListener("click", () => {
   const count = parseInt(document.getElementById("count-select").value, 10);
 
   let filtered = songDatabase.filter(song => {
-    if (!song.lyrics[part] || song.lyrics[part].length === 0) return false;
+    if (!song.lyrics || !song.lyrics[part] || song.lyrics[part].length === 0) return false;
 
     if (category === "halloffame") {
       return song.hallOfFame;
@@ -233,7 +276,7 @@ document.getElementById("next-phrase-btn").addEventListener("click", () => {
   addNextPhrase();
 });
 
-// ✨ 途中でやめる処理
+// 途中でやめる処理
 document.getElementById("quit-btn").addEventListener("click", () => {
   if (confirm("クイズを中断してメニューに戻りますか？")) {
     clearInterval(gameState.timerInterval);
@@ -318,7 +361,7 @@ function finishQuestion(isCorrect, isPass = false) {
   showScreen("answer");
 }
 
-// 次の問題へ
+// ---- 次の問題へ / 最終結果画面 ----
 document.getElementById("next-question-btn").addEventListener("click", () => {
   gameState.currentIndex++;
   if (gameState.currentIndex < gameState.questions.length) {
@@ -331,19 +374,14 @@ document.getElementById("next-question-btn").addEventListener("click", () => {
   }
 });
 
-// メニューへ戻る
+// メニューに戻るボタン処理
 document.getElementById("back-to-menu-btn").addEventListener("click", () => {
   showScreen("menu");
 });
 
-// ---- 管理者メニュー機能 ----
-const adminScreen = document.getElementById("admin-screen");
-const adminMsg = document.getElementById("admin-msg");
-const addTitleInput = document.getElementById("add-title");
-
+// ---- 管理者機能（Firestoreへの追加・削除連携） ----
 document.getElementById("open-admin-btn").addEventListener("click", () => {
-  adminMsg.classList.add("hidden");
-  renderSongList();
+  renderAdminSongList();
   showScreen("admin");
 });
 
@@ -351,148 +389,93 @@ document.getElementById("close-admin-btn").addEventListener("click", () => {
   showScreen("menu");
 });
 
-// タイトル入力時のリアルタイム重複チェック
-addTitleInput.addEventListener("input", () => {
-  const title = addTitleInput.value.trim();
-
-  if (title === "") {
-    adminMsg.classList.add("hidden");
-    return;
-  }
-
-  const isDuplicate = songDatabase.some(song => song.title.toLowerCase() === title.toLowerCase());
-
-  if (isDuplicate) {
-    adminMsg.innerText = "⚠️ この楽曲は既に登録されています！";
-    adminMsg.className = "message error";
-    adminMsg.classList.remove("hidden");
-  } else {
-    adminMsg.classList.add("hidden");
-  }
-});
-
-// 新規楽曲追加
-document.getElementById("add-song-form").addEventListener("submit", (e) => {
+// 楽曲追加フォーム
+document.getElementById("add-song-form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const title = addTitleInput.value.trim();
-  const producer = document.getElementById("add-producer").value.trim();
-  const year = parseInt(document.getElementById("add-year").value, 10);
-  const hallOfFame = document.getElementById("add-halloffame").checked;
+  const parseText = (id) => {
+    const val = document.getElementById(id).value.trim();
+    return val ? val.split("\n").map(s => s.trim()).filter(s => s) : [];
+  };
 
-  const parseText = (id) => document.getElementById(id).value.split(/\r?\n|\r/).map(s => s.trim()).filter(s => s.length > 0);
+  const newSong = {
+    title: document.getElementById("add-title").value.trim(),
+    producer: document.getElementById("add-producer").value.trim(),
+    year: parseInt(document.getElementById("add-year").value, 10),
+    hallOfFame: document.getElementById("add-halloffame").checked,
+    lyrics: {
+      intro: parseText("add-intro"),
+      chorus: parseText("add-chorus"),
+      prechorus: parseText("add-prechorus")
+    }
+  };
 
-  const intro = parseText("add-intro");
-  const chorus = parseText("add-chorus");
-  const prechorus = parseText("add-prechorus");
+  try {
+    const docRef = await addDoc(collection(db, SONGS_COLLECTION), newSong);
+    songDatabase.push({ id: docRef.id, ...newSong });
 
-  const isDuplicate = songDatabase.some(song => song.title.toLowerCase() === title.toLowerCase());
+    const msg = document.getElementById("admin-msg");
+    msg.innerText = `「${newSong.title}」を追加しました！`;
+    msg.classList.remove("hidden");
 
-  if (isDuplicate) {
-    adminMsg.innerText = "⚠️ 既に追加済みです！別の曲名を入力してください。";
-    adminMsg.className = "message error";
-    adminMsg.classList.remove("hidden");
+    document.getElementById("add-song-form").reset();
+    document.getElementById("add-year").value = 2011;
+    document.getElementById("add-halloffame").checked = true;
+
+    renderAdminSongList();
+
+    setTimeout(() => {
+      msg.classList.add("hidden");
+    }, 3000);
+  } catch (err) {
+    console.error("楽曲追加エラー:", err);
+    alert("楽曲の追加に失敗しました。");
+  }
+});
+
+// 登録済み楽曲一覧の描画と削除処理
+function renderAdminSongList() {
+  const container = document.getElementById("song-list-container");
+  container.innerHTML = "";
+
+  if (songDatabase.length === 0) {
+    container.innerHTML = '<p style="color:#94a3b8;">登録されている楽曲はありません。</p>';
     return;
   }
 
-  const newSong = {
-    title,
-    producer,
-    year,
-    hallOfFame,
-    lyrics: { intro, chorus, prechorus }
-  };
-
-  songDatabase.push(newSong);
-  saveDatabase();
-
-  adminMsg.innerText = `✅ 「${title}」を新たに追加しました！`;
-  adminMsg.className = "message success";
-  adminMsg.classList.remove("hidden");
-
-  document.getElementById("add-song-form").reset();
-  renderSongList();
-});
-
-// 📚 楽曲一覧の描画
-function renderSongList() {
-  const container = document.getElementById("song-list-container");
-  if (!container) return;
-  container.innerHTML = "";
-
-  songDatabase.forEach((song, index) => {
-    const item = document.createElement("details");
-    item.className = "song-item";
-    item.style.marginBottom = "8px";
-    item.style.padding = "10px";
-    item.style.background = "#1e293b";
-    item.style.borderRadius = "6px";
-
-    const introText = (song.lyrics && song.lyrics.intro) ? song.lyrics.intro.join("\n") : "";
-    const chorusText = (song.lyrics && song.lyrics.chorus) ? song.lyrics.chorus.join("\n") : "";
-    const prechorusText = (song.lyrics && song.lyrics.prechorus) ? song.lyrics.prechorus.join("\n") : "";
+  songDatabase.forEach((song) => {
+    const item = document.createElement("div");
+    item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px; background:#0f172a; border-radius:6px; margin-bottom:8px; border:1px solid #334155;";
 
     item.innerHTML = `
-      <summary style="font-weight: bold; cursor: pointer; color: #38bdf8;">
-        🎵 ${song.title}
-      </summary>
-      <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-        <label>タイトル:
-          <input type="text" id="edit-title-${index}" value="${song.title}">
-        </label>
-        <label>ボカロP:
-          <input type="text" id="edit-producer-${index}" value="${song.producer || ''}">
-        </label>
-        <label>投稿年:
-          <input type="number" id="edit-year-${index}" value="${song.year || 2011}">
-        </label>
-        <label>
-          <input type="checkbox" id="edit-halloffame-${index}" ${song.hallOfFame ? 'checked' : ''}> 殿堂入り
-        </label>
-        <label>イントロ歌詞 (改行区切り):
-          <textarea id="edit-intro-${index}" rows="3">${introText}</textarea>
-        </label>
-        <label>サビ歌詞 (改行区切り):
-          <textarea id="edit-chorus-${index}" rows="3">${chorusText}</textarea>
-        </label>
-        <label>Bメロ歌詞 (改行区切り):
-          <textarea id="edit-prechorus-${index}" rows="3">${prechorusText}</textarea>
-        </label>
-        <button onclick="updateSong(${index})" class="btn" style="background-color: #22c55e; margin-top: 6px;">変更を保存</button>
+      <div>
+        <strong>${song.title}</strong> / ${song.producer} (${song.year}年)
       </div>
+      <button class="delete-btn" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">削除</button>
     `;
+
+    item.querySelector(".delete-btn").addEventListener("click", async () => {
+      if (confirm(`「${song.title}」を削除してもよろしいですか？`)) {
+        try {
+          if (song.id) {
+            await deleteDoc(doc(db, SONGS_COLLECTION, song.id));
+          }
+          songDatabase = songDatabase.filter(s => s !== song);
+          renderAdminSongList();
+        } catch (err) {
+          console.error("削除エラー:", err);
+          alert("削除に失敗しました。");
+        }
+      }
+    });
 
     container.appendChild(item);
   });
 }
 
-// ✏️ 楽曲データの更新機能
-window.updateSong = function(index) {
-  const parseText = (id) => document.getElementById(id).value.split(/\r?\n|\r/).map(s => s.trim()).filter(s => s.length > 0);
+// アプリの初期起動処理
+async function init() {
+  await loadSongsFromFirebase();
+}
 
-  const updatedTitle = document.getElementById(`edit-title-${index}`).value.trim();
-  const updatedProducer = document.getElementById(`edit-producer-${index}`).value.trim();
-  const updatedYear = parseInt(document.getElementById(`edit-year-${index}`).value, 10);
-  const updatedHallOfFame = document.getElementById(`edit-halloffame-${index}`).checked;
-
-  if (!updatedTitle) {
-    alert("タイトルを入力してください");
-    return;
-  }
-
-  songDatabase[index] = {
-    title: updatedTitle,
-    producer: updatedProducer,
-    year: updatedYear,
-    hallOfFame: updatedHallOfFame,
-    lyrics: {
-      intro: parseText(`edit-intro-${index}`),
-      chorus: parseText(`edit-chorus-${index}`),
-      prechorus: parseText(`edit-prechorus-${index}`)
-    }
-  };
-
-  saveDatabase();
-  alert(`「${updatedTitle}」の情報を更新しました！`);
-  renderSongList();
-};
+init();
