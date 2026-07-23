@@ -121,22 +121,18 @@ let gameState = {
   selectedPart: "intro"
 };
 
-// 全画面の切り替え管理（active クラスの付与・削除で確実に切り替えます）
-const screens = {
-  menu: document.getElementById("menu-screen"),
-  game: document.getElementById("game-screen"),
-  answer: document.getElementById("answer-screen"),
-  final: document.getElementById("final-screen"),
-  admin: document.getElementById("admin-screen"),
-  editSong: document.getElementById("edit-song-screen")
-};
-
-function showScreen(screenKey) {
-  Object.values(screens).forEach(screen => {
-    if (screen) screen.classList.remove("active");
+// 画面の切り替え処理（すべての.screen要素を非表示にして対象だけactiveにする）
+function showScreen(screenId) {
+  const allScreens = document.querySelectorAll(".screen");
+  allScreens.forEach(screen => {
+    screen.classList.remove("active");
   });
-  if (screens[screenKey]) {
-    screens[screenKey].classList.add("active");
+
+  const targetScreen = document.getElementById(screenId);
+  if (targetScreen) {
+    targetScreen.classList.add("active");
+  } else {
+    console.error("画面が見つかりません:", screenId);
   }
 }
 
@@ -192,7 +188,7 @@ document.getElementById("start-btn").addEventListener("click", () => {
   gameState.selectedPart = part;
 
   setupUIForModes();
-  showScreen("game");
+  showScreen("game-screen");
   loadQuestion();
 });
 
@@ -284,7 +280,7 @@ document.getElementById("next-phrase-btn").addEventListener("click", addNextPhra
 document.getElementById("quit-btn").addEventListener("click", () => {
   if (confirm("クイズを中断してメニューに戻りますか？")) {
     clearInterval(gameState.timerInterval);
-    showScreen("menu");
+    showScreen("menu-screen");
   }
 });
 
@@ -358,23 +354,23 @@ function finishQuestion(isCorrect, isPass = false) {
   document.getElementById("detail-producer").innerText = gameState.currentSong.producer;
   document.getElementById("detail-year").innerText = gameState.currentSong.year + "年";
 
-  showScreen("answer");
+  showScreen("answer-screen");
 }
 
 document.getElementById("next-question-btn").addEventListener("click", () => {
   gameState.currentIndex++;
   if (gameState.currentIndex < gameState.questions.length) {
-    showScreen("game");
+    showScreen("game-screen");
     loadQuestion();
   } else {
     document.getElementById("final-score").innerText = gameState.score;
     document.getElementById("final-total").innerText = gameState.questions.length;
-    showScreen("final");
+    showScreen("final-screen");
   }
 });
 
 document.getElementById("back-to-menu-btn").addEventListener("click", () => {
-  showScreen("menu");
+  showScreen("menu-screen");
 });
 
 // 管理者メニュー操作
@@ -384,11 +380,11 @@ const addTitleInput = document.getElementById("add-title");
 document.getElementById("open-admin-btn").addEventListener("click", () => {
   adminMsg.classList.add("hidden");
   renderSongList();
-  showScreen("admin");
+  showScreen("admin-screen");
 });
 
 document.getElementById("close-admin-btn").addEventListener("click", () => {
-  showScreen("menu");
+  showScreen("menu-screen");
 });
 
 addTitleInput.addEventListener("input", () => {
@@ -469,7 +465,7 @@ function renderSongList() {
     item.style.cursor = "pointer";
     item.innerHTML = `🎵 <strong>${song.title}</strong> (${song.producer || 'ボカロP未設定'})`;
     
-    // タップ・クリックで編集専用画面に遷移（確実に遷移させる処理）
+    // タップ・クリックで編集専用画面に遷移
     item.addEventListener("click", () => {
       openEditScreen(index);
     });
@@ -492,12 +488,13 @@ function openEditScreen(index) {
   document.getElementById("edit-chorus").value = song.lyrics?.chorus ? song.lyrics.chorus.join("\n") : "";
   document.getElementById("edit-prechorus").value = song.lyrics?.prechorus ? song.lyrics.prechorus.join("\n") : "";
 
-  showScreen("editSong");
+  // 編集専用画面（edit-song-screen）を表示
+  showScreen("edit-song-screen");
 }
 
 // 編集画面からのキャンセルボタン
 document.getElementById("cancel-edit-btn").addEventListener("click", () => {
-  showScreen("admin");
+  showScreen("admin-screen");
 });
 
 // 編集実行（更新）
@@ -529,7 +526,7 @@ document.getElementById("edit-song-form").addEventListener("submit", async (e) =
     songDatabase[currentEditingIndex] = { id: targetSong.id, ...updatedData };
     alert(`「${updatedData.title}」の情報を更新しました！`);
     renderSongList();
-    showScreen("admin");
+    showScreen("admin-screen");
   } catch (error) {
     console.error("更新エラー:", error);
     alert("データの更新に失敗しました。");
@@ -564,7 +561,7 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
     deleteModal.classList.add("hidden");
     alert(`「${targetSong.title}」を削除しました。`);
     renderSongList();
-    showScreen("admin");
+    showScreen("admin-screen");
   } catch (error) {
     console.error("削除エラー:", error);
     alert("データの削除に失敗しました。");
