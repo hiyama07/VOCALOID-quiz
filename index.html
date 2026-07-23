@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- ✨ タブ名を修正 -->
   <title>ボカロ歌詞クイズ</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -12,7 +11,6 @@
 
     <!-- 1. メニュー画面 -->
     <div id="menu-screen" class="screen active">
-      <!-- ✨ タイトルを修正 -->
       <h1>🎵 ボカロ歌詞クイズ</h1>
       
       <div class="setting-group">
@@ -132,61 +130,77 @@
     <div id="admin-screen" class="screen">
       <h2>⚙️ 管理者メニュー</h2>
       
-      <form id="add-song-form">
-        <h3>➕ 新しい楽曲を追加</h3>
+      <!-- 追加楽曲一覧 -->
+      <div class="admin-section">
+        <h3>🎵 登録済み楽曲一覧</h3>
+        <p class="admin-help-text">※ 楽曲をタップすると編集・削除ができます</p>
+        <div id="admin-song-list" class="song-list-container"></div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- 楽曲追加・編集フォーム -->
+      <div class="admin-section">
+        <div class="form-header">
+          <h3 id="form-title">➕ 新しい楽曲を追加</h3>
+          <button id="reset-form-btn" type="button" class="btn secondary small-btn">新規登録に戻る</button>
+        </div>
         
         <div id="admin-msg" class="message hidden"></div>
 
-        <div class="form-group">
-          <label for="add-title">曲名：</label>
-          <input type="text" id="add-title" required placeholder="例: カゲロウデイズ">
-        </div>
+        <form id="add-song-form" onsubmit="return false;">
+          <div class="form-group">
+            <label for="add-title">曲名：</label>
+            <input type="text" id="add-title" required placeholder="例: カゲロウデイズ">
+          </div>
 
-        <div class="form-group">
-          <label for="add-producer">ボカロP：</label>
-          <input type="text" id="add-producer" required placeholder="例: じん">
-        </div>
+          <div class="form-group">
+            <label for="add-producer">ボカロP：</label>
+            <input type="text" id="add-producer" required placeholder="例: じん">
+          </div>
 
-        <div class="form-group">
-          <label for="add-year">投稿年：</label>
-          <input type="number" id="add-year" required value="2011" min="2000" max="2030">
-        </div>
+          <div class="form-group">
+            <label for="add-year">投稿年：</label>
+            <input type="number" id="add-year" required placeholder="2011" value="2020">
+          </div>
 
-        <div class="form-group checkbox-group">
-          <label>
-            <input type="checkbox" id="add-halloffame" checked> 殿堂入り楽曲
-          </label>
-        </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="add-halloffame"> 殿堂入り/伝説入り
+            </label>
+          </div>
 
-        <div class="form-group">
-          <label for="add-intro">歌い始め歌詞 (改行区切り)：</label>
-          <textarea id="add-intro" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
+          <h4>歌詞設定（1行につき1フレーズ・改行で指定）</h4>
 
-        <div class="form-group">
-          <label for="add-chorus">サビ歌詞 (改行区切り)：</label>
-          <textarea id="add-chorus" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
+          <div class="form-group">
+            <label for="add-intro">歌い始め (intro)：</label>
+            <textarea id="add-intro" rows="3" placeholder="8月1日の午後2時頃じゃない&#10;やけに眩しい日差しの中"></textarea>
+          </div>
 
-        <div class="form-group">
-          <label for="add-prechorus">ラスサビ前歌詞 (改行区切り)：</label>
-          <textarea id="add-prechorus" rows="3" placeholder="1行目&#10;2行目&#10;3行目"></textarea>
-        </div>
+          <div class="form-group">
+            <label for="add-prechorus">ラスサビ前 (prechorus)：</label>
+            <textarea id="add-prechorus" rows="3" placeholder="パッと通らせたトラックが&#10;轢き殺して行く"></textarea>
+          </div>
 
-        <button type="submit" class="btn primary">楽曲を登録する</button>
-      </form>
+          <div class="form-group">
+            <label for="add-chorus">サビ (chorus)：</label>
+            <textarea id="add-chorus" rows="3" placeholder="「ああ、またダメだったか」と&#10;猫を抱きかかえて笑った"></textarea>
+          </div>
 
-      <hr style="margin: 25px 0; border: 0; border-top: 1px solid #334155;">
+          <div class="btn-group">
+            <button type="button" id="save-song-btn" class="btn primary">保存する</button>
+            <button type="button" id="delete-song-btn" class="btn danger hidden">削除する</button>
+          </div>
+        </form>
+      </div>
 
-      <h3>📚 登録済み楽曲一覧</h3>
-      <div id="song-list-container" class="song-list" style="margin-bottom: 20px;"></div>
-
-      <button id="close-admin-btn" class="btn secondary">メニューに戻る</button>
+      <div style="margin-top: 20px;">
+        <button id="admin-back-btn" class="btn secondary">メニューに戻る</button>
+      </div>
     </div>
 
   </div>
 
-  <!-- Firebase CDNモジュール読み込み用に type="module" を指定 -->
-  <script type="module" src="script.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
