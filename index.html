@@ -33,7 +33,7 @@
         </select>
       </div>
 
-      <!-- パート選択（表記修正） -->
+      <!-- 出題パート選択 -->
       <div class="setting-group">
         <label for="part-select">出題パート</label>
         <select id="part-select">
@@ -59,26 +59,28 @@
         </select>
       </div>
 
+      <!-- 出題数（5, 10, 20, 50に拡張） -->
       <div class="setting-group">
         <label for="count-select">出題数</label>
         <select id="count-select">
           <option value="5">5問</option>
-          <option value="10">10問</option>
-          <option value="15">15問</option>
+          <option value="10" selected>10問</option>
+          <option value="20">20問</option>
+          <option value="50">50問</option>
         </select>
       </div>
 
       <button id="start-btn" class="btn primary">ゲームスタート！</button>
 
       <div class="admin-link-wrapper">
-        <button id="open-admin-btn" class="subtle-link-btn">楽曲管理画面へ</button>
+        <button id="open-admin-btn" class="subtle-link-btn">管理者メニュー</button>
       </div>
     </div>
 
     <!-- 2. クイズプレイ画面 -->
     <div id="game-screen" class="screen">
       <div class="game-header">
-        <span id="question-progress">第 1 / 5 問</span>
+        <span id="question-progress">第 1 / 10 問</span>
         <div id="timer-display" class="timer">15</div>
         <button id="quit-btn" class="quit-btn">中断</button>
       </div>
@@ -123,15 +125,15 @@
       <h2>結果発表</h2>
       <div class="final-score-text">
         <p>あなたの正解数は...</p>
-        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">5</span></div>
+        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
       </div>
       <button id="back-to-menu-btn" class="btn primary">メニューに戻る</button>
     </div>
 
-    <!-- 5. 楽曲管理（管理者）画面 -->
+    <!-- 5. 管理者メニュー画面 -->
     <div id="admin-screen" class="screen">
       <div class="form-header">
-        <h2>楽曲データの管理</h2>
+        <h2>管理者メニュー</h2>
         <button id="close-admin-btn" class="btn secondary small-btn">戻る</button>
       </div>
 
@@ -174,7 +176,7 @@
       <hr class="divider">
 
       <div class="admin-section">
-        <h3>登録済み楽曲一覧</h3>
+        <h3>登録済み楽曲一覧 (初期楽曲含む)</h3>
         <p style="font-size:0.85rem; color:#94a3b8;">タップして編集ができます</p>
         <div id="song-list-container" class="song-list-container"></div>
       </div>
