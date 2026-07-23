@@ -59,7 +59,7 @@
         </select>
       </div>
 
-      <!-- 出題数（5, 10, 20, 50に拡張） -->
+      <!-- 出題数 -->
       <div class="setting-group">
         <label for="count-select">出題数</label>
         <select id="count-select">
@@ -177,8 +177,64 @@
 
       <div class="admin-section">
         <h3>登録済み楽曲一覧 (初期楽曲含む)</h3>
-        <p style="font-size:0.85rem; color:#94a3b8;">タップして編集ができます</p>
+        <p style="font-size:0.85rem; color:#94a3b8;">タップすると詳細画面で編集・削除ができます</p>
         <div id="song-list-container" class="song-list-container"></div>
+      </div>
+    </div>
+
+    <!-- 6. 楽曲編集専用画面（完全独立画面） -->
+    <div id="edit-song-screen" class="screen">
+      <div class="form-header">
+        <h2>楽曲情報の編集</h2>
+        <button id="cancel-edit-btn" class="btn secondary small-btn">キャンセル</button>
+      </div>
+
+      <form id="edit-song-form" class="admin-section">
+        <div class="form-group">
+          <label>タイトル *</label>
+          <input type="text" id="edit-title" required>
+        </div>
+        <div class="form-group">
+          <label>ボカロP *</label>
+          <input type="text" id="edit-producer" required>
+        </div>
+        <div class="form-group">
+          <label>投稿年 *</label>
+          <input type="number" id="edit-year" required>
+        </div>
+        <div class="form-group checkbox-group">
+          <label><input type="checkbox" id="edit-halloffame"> 殿堂入り/伝説入り</label>
+        </div>
+        <div class="form-group">
+          <label>歌い始め歌詞 (1行ずつ改行)</label>
+          <textarea id="edit-intro" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>サビ歌詞 (1行ずつ改行)</label>
+          <textarea id="edit-chorus" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>ラスサビ前歌詞 (1行ずつ改行)</label>
+          <textarea id="edit-prechorus" rows="3"></textarea>
+        </div>
+
+        <div class="btn-group" style="margin-top: 1.5rem;">
+          <button type="submit" class="btn primary">変更を保存</button>
+          <button type="button" id="open-delete-modal-btn" class="btn danger">この楽曲を削除</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7. 削除確認ポップアップ (モーダル) -->
+  <div id="delete-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3>⚠️ 楽曲の削除</h3>
+      <p>本当に「<span id="delete-target-title"></span>」を削除しますか？</p>
+      <p style="font-size:0.85rem; color:#f87171;">※この操作は取り消せません。</p>
+      <div class="modal-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button id="cancel-delete-btn" class="btn secondary">キャンセル</button>
+        <button id="confirm-delete-btn" class="btn danger">削除する</button>
       </div>
     </div>
   </div>
