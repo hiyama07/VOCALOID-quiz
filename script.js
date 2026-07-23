@@ -1,4 +1,3 @@
-// Firebase SDK のインポート (v9+ Module JS)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getFirestore, 
@@ -9,7 +8,6 @@ import {
   updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Firebaseの設定情報（登録いただいたプロジェクト情報を適用済み）
 const firebaseConfig = {
   apiKey: "AIzaSyD9MGcLh2z_cc0qoug2SZSpKeNX4bAH02s",
   authDomain: "vocaloid-quiz-5005f.firebaseapp.com",
@@ -19,12 +17,11 @@ const firebaseConfig = {
   appId: "1:671477870013:web:ce2275e9cbb11560cb76d4"
 };
 
-// Firebase の初期化
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SONGS_COLLECTION = "vocaloid_songs";
 
-// デフォルトデータ（Firestoreが空の場合の初期登録用）
+// 初期サンプル楽曲データ
 const defaultSongs = [
   {
     title: "初音ミクの消失",
@@ -72,10 +69,9 @@ const defaultSongs = [
   }
 ];
 
-// メモリ内のデータベース保持用
 let songDatabase = [];
 
-// Firestore から楽曲を取得（初回ロード時）
+// Firestore から楽曲を取得（空の場合はサンプル曲を自動登録）
 async function loadSongsFromFirebase() {
   try {
     const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
@@ -88,7 +84,7 @@ async function loadSongsFromFirebase() {
       });
     });
 
-    // Firestore が空なら初期データを自動投入
+    // Firestoreに楽曲が1件も存在しない場合は初期曲をFirebaseへ投入
     if (songDatabase.length === 0) {
       for (const song of defaultSongs) {
         const docRef = await addDoc(collection(db, SONGS_COLLECTION), song);
@@ -97,7 +93,7 @@ async function loadSongsFromFirebase() {
     }
   } catch (error) {
     console.error("Firestore読み込みエラー:", error);
-    alert("データベースの読み込みに失敗しました。Firestoreのセキュリティルールやネットワーク接続をご確認ください。");
+    alert("データベースの読み込みに失敗しました。Firestoreのセキュリティルールをご確認ください。");
   }
 }
 
@@ -116,7 +112,6 @@ let gameState = {
   selectedPart: "intro"
 };
 
-// DOM要素の取得
 const screens = {
   menu: document.getElementById("menu-screen"),
   game: document.getElementById("game-screen"),
@@ -130,7 +125,6 @@ function showScreen(screenKey) {
   screens[screenKey].classList.add("active");
 }
 
-// カテゴリー・年代連動
 const categorySelect = document.getElementById("category-select");
 const eraGroup = document.getElementById("era-group");
 
@@ -142,7 +136,6 @@ categorySelect.addEventListener("change", () => {
   }
 });
 
-// ゲーム開始処理
 document.getElementById("start-btn").addEventListener("click", () => {
   const category = categorySelect.value;
   const era = document.getElementById("era-select").value;
@@ -368,7 +361,6 @@ document.getElementById("back-to-menu-btn").addEventListener("click", () => {
   showScreen("menu");
 });
 
-// 管理者画面の操作
 const adminMsg = document.getElementById("admin-msg");
 const addTitleInput = document.getElementById("add-title");
 
@@ -400,7 +392,7 @@ addTitleInput.addEventListener("input", () => {
   }
 });
 
-// Firebaseへ新規追加
+// 新規追加
 document.getElementById("add-song-form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -448,7 +440,6 @@ document.getElementById("add-song-form").addEventListener("submit", async (e) =>
   }
 });
 
-// 楽曲一覧のレンダリング
 function renderSongList() {
   const container = document.getElementById("song-list-container");
   if (!container) return;
@@ -479,13 +470,13 @@ function renderSongList() {
         <label class="checkbox-label">
           <input type="checkbox" id="edit-halloffame-${index}" ${song.hallOfFame ? 'checked' : ''}> 殿堂入り
         </label>
-        <label>イントロ歌詞 (改行区切り):
+        <label>歌い始め歌詞 (改行区切り):
           <textarea id="edit-intro-${index}" rows="3">${introText}</textarea>
         </label>
         <label>サビ歌詞 (改行区切り):
           <textarea id="edit-chorus-${index}" rows="3">${chorusText}</textarea>
         </label>
-        <label>Bメロ歌詞 (改行区切り):
+        <label>ラスサビ前歌詞 (改行区切り):
           <textarea id="edit-prechorus-${index}" rows="3">${prechorusText}</textarea>
         </label>
         <button id="save-btn-${index}" class="btn primary small-btn">変更を保存</button>
@@ -494,14 +485,12 @@ function renderSongList() {
 
     container.appendChild(item);
 
-    // 保存ボタンのイベントリスナー設定
     document.getElementById(`save-btn-${index}`).addEventListener("click", () => {
       updateSong(index);
     });
   });
 }
 
-// Firebaseの更新関数
 async function updateSong(index) {
   const targetSong = songDatabase[index];
   const parseText = (id) => document.getElementById(id).value.split(/\r?\n|\r/).map(s => s.trim()).filter(s => s.length > 0);
@@ -542,5 +531,5 @@ async function updateSong(index) {
   }
 }
 
-// 起動時にFirebaseからデータを読み込む
+// アプリ起動時にFirebaseから取得
 loadSongsFromFirebase();
