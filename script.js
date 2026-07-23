@@ -5,7 +5,8 @@ import {
   getDocs, 
   addDoc, 
   doc, 
-  updateDoc 
+  updateDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Firebase設定
@@ -71,6 +72,7 @@ const defaultSongs = [
 ];
 
 let songDatabase = [];
+let currentEditingIndex = null; // 現在編集中の楽曲インデックス
 
 // Firestore から楽曲を取得（未登録の初期楽曲があれば自動補填）
 async function loadSongsFromFirebase() {
@@ -85,7 +87,6 @@ async function loadSongsFromFirebase() {
       });
     });
 
-    // 初期楽曲がデータベースに不足している場合は補填
     let hasAddedNew = false;
     for (const song of defaultSongs) {
       const exists = songDatabase.some(s => s.title === song.title);
@@ -125,7 +126,8 @@ const screens = {
   game: document.getElementById("game-screen"),
   answer: document.getElementById("answer-screen"),
   final: document.getElementById("final-screen"),
-  admin: document.getElementById("admin-screen")
+  admin: document.getElementById("admin-screen"),
+  editSong: document.getElementById("edit-song-screen")
 };
 
 function showScreen(screenKey) {
@@ -374,14 +376,12 @@ document.getElementById("back-to-menu-btn").addEventListener("click", () => {
 const adminMsg = document.getElementById("admin-msg");
 const addTitleInput = document.getElementById("add-title");
 
-// 管理者メニューを開く
 document.getElementById("open-admin-btn").addEventListener("click", () => {
   adminMsg.classList.add("hidden");
   renderSongList();
   showScreen("admin");
 });
 
-// 管理者メニューから「戻る」ボタン
 document.getElementById("close-admin-btn").addEventListener("click", () => {
   showScreen("menu");
 });
@@ -452,82 +452,67 @@ document.getElementById("add-song-form").addEventListener("submit", async (e) =>
   }
 });
 
-// 管理者画面の曲一覧描画（初期曲含む全件が表示されます）
+// 管理者画面の曲一覧描画
 function renderSongList() {
   const container = document.getElementById("song-list-container");
   if (!container) return;
   container.innerHTML = "";
 
   songDatabase.forEach((song, index) => {
-    const item = document.createElement("details");
+    const item = document.createElement("div");
     item.className = "song-item";
-
-    const introText = (song.lyrics && song.lyrics.intro) ? song.lyrics.intro.join("\n") : "";
-    const chorusText = (song.lyrics && song.lyrics.chorus) ? song.lyrics.chorus.join("\n") : "";
-    const prechorusText = (song.lyrics && song.lyrics.prechorus) ? song.lyrics.prechorus.join("\n") : "";
-
-    item.innerHTML = `
-      <summary>
-        🎵 ${song.title} (${song.producer || 'ボカロP未設定'})
-      </summary>
-      <div class="edit-form-content">
-        <label>タイトル:
-          <input type="text" id="edit-title-${index}" value="${song.title}">
-        </label>
-        <label>ボカロP:
-          <input type="text" id="edit-producer-${index}" value="${song.producer || ''}">
-        </label>
-        <label>投稿年:
-          <input type="number" id="edit-year-${index}" value="${song.year || 2011}">
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" id="edit-halloffame-${index}" ${song.hallOfFame ? 'checked' : ''}> 殿堂入り
-        </label>
-        <label>歌い始め歌詞 (改行区切り):
-          <textarea id="edit-intro-${index}" rows="3">${introText}</textarea>
-        </label>
-        <label>サビ歌詞 (改行区切り):
-          <textarea id="edit-chorus-${index}" rows="3">${chorusText}</textarea>
-        </label>
-        <label>ラスサビ前歌詞 (改行区切り):
-          <textarea id="edit-prechorus-${index}" rows="3">${prechorusText}</textarea>
-        </label>
-        <button id="save-btn-${index}" class="btn primary small-btn">変更を保存</button>
-      </div>
-    `;
+    item.style.cursor = "pointer";
+    item.innerHTML = `🎵 <strong>${song.title}</strong> (${song.producer || 'ボカロP未設定'})`;
+    
+    // タップ・クリックで編集専用画面に遷移
+    item.addEventListener("click", () => {
+      openEditScreen(index);
+    });
 
     container.appendChild(item);
-
-    document.getElementById(`save-btn-${index}`).addEventListener("click", () => {
-      updateSong(index);
-    });
   });
 }
 
-// データ更新処理
-async function updateSong(index) {
-  const targetSong = songDatabase[index];
+// 楽曲編集画面を開く
+function openEditScreen(index) {
+  currentEditingIndex = index;
+  const song = songDatabase[index];
+
+  document.getElementById("edit-title").value = song.title;
+  document.getElementById("edit-producer").value = song.producer || "";
+  document.getElementById("edit-year").value = song.year || 2011;
+  document.getElementById("edit-halloffame").checked = !!song.hallOfFame;
+
+  document.getElementById("edit-intro").value = song.lyrics?.intro ? song.lyrics.intro.join("\n") : "";
+  document.getElementById("edit-chorus").value = song.lyrics?.chorus ? song.lyrics.chorus.join("\n") : "";
+  document.getElementById("edit-prechorus").value = song.lyrics?.prechorus ? song.lyrics.prechorus.join("\n") : "";
+
+  showScreen("editSong");
+}
+
+// 編集画面からのキャンセルボタン
+document.getElementById("cancel-edit-btn").addEventListener("click", () => {
+  showScreen("admin");
+});
+
+// 編集実行（更新）
+document.getElementById("edit-song-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  if (currentEditingIndex === null) return;
+  const targetSong = songDatabase[currentEditingIndex];
+
   const parseText = (id) => document.getElementById(id).value.split(/\r?\n|\r/).map(s => s.trim()).filter(s => s.length > 0);
 
-  const updatedTitle = document.getElementById(`edit-title-${index}`).value.trim();
-  const updatedProducer = document.getElementById(`edit-producer-${index}`).value.trim();
-  const updatedYear = parseInt(document.getElementById(`edit-year-${index}`).value, 10);
-  const updatedHallOfFame = document.getElementById(`edit-halloffame-${index}`).checked;
-
-  if (!updatedTitle) {
-    alert("タイトルを入力してください");
-    return;
-  }
-
   const updatedData = {
-    title: updatedTitle,
-    producer: updatedProducer,
-    year: updatedYear,
-    hallOfFame: updatedHallOfFame,
+    title: document.getElementById("edit-title").value.trim(),
+    producer: document.getElementById("edit-producer").value.trim(),
+    year: parseInt(document.getElementById("edit-year").value, 10),
+    hallOfFame: document.getElementById("edit-halloffame").checked,
     lyrics: {
-      intro: parseText(`edit-intro-${index}`),
-      chorus: parseText(`edit-chorus-${index}`),
-      prechorus: parseText(`edit-prechorus-${index}`)
+      intro: parseText("edit-intro"),
+      chorus: parseText("edit-chorus"),
+      prechorus: parseText("edit-prechorus")
     }
   };
 
@@ -536,14 +521,50 @@ async function updateSong(index) {
       const songRef = doc(db, SONGS_COLLECTION, targetSong.id);
       await updateDoc(songRef, updatedData);
     }
-    songDatabase[index] = { id: targetSong.id, ...updatedData };
-    alert(`「${updatedTitle}」の情報を更新しました！`);
+    songDatabase[currentEditingIndex] = { id: targetSong.id, ...updatedData };
+    alert(`「${updatedData.title}」の情報を更新しました！`);
     renderSongList();
+    showScreen("admin");
   } catch (error) {
     console.error("更新エラー:", error);
     alert("データの更新に失敗しました。");
   }
-}
+});
+
+// 削除モーダルダイアログの制御
+const deleteModal = document.getElementById("delete-modal");
+
+document.getElementById("open-delete-modal-btn").addEventListener("click", () => {
+  if (currentEditingIndex === null) return;
+  const song = songDatabase[currentEditingIndex];
+  document.getElementById("delete-target-title").innerText = song.title;
+  deleteModal.classList.remove("hidden");
+});
+
+document.getElementById("cancel-delete-btn").addEventListener("click", () => {
+  deleteModal.classList.add("hidden");
+});
+
+// 本当に削除する（実行）
+document.getElementById("confirm-delete-btn").addEventListener("click", async () => {
+  if (currentEditingIndex === null) return;
+  const targetSong = songDatabase[currentEditingIndex];
+
+  try {
+    if (targetSong.id) {
+      await deleteDoc(doc(db, SONGS_COLLECTION, targetSong.id));
+    }
+    songDatabase.splice(currentEditingIndex, 1);
+
+    deleteModal.classList.add("hidden");
+    alert(`「${targetSong.title}」を削除しました。`);
+    renderSongList();
+    showScreen("admin");
+  } catch (error) {
+    console.error("削除エラー:", error);
+    alert("データの削除に失敗しました。");
+  }
+});
 
 // 起動時にデータ読み込み実行
 loadSongsFromFirebase();
