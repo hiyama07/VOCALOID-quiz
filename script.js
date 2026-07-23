@@ -121,6 +121,7 @@ let gameState = {
   selectedPart: "intro"
 };
 
+// 全画面の切り替え管理（active クラスの付与・削除で確実に切り替えます）
 const screens = {
   menu: document.getElementById("menu-screen"),
   game: document.getElementById("game-screen"),
@@ -131,8 +132,12 @@ const screens = {
 };
 
 function showScreen(screenKey) {
-  Object.values(screens).forEach(screen => screen.classList.remove("active"));
-  screens[screenKey].classList.add("active");
+  Object.values(screens).forEach(screen => {
+    if (screen) screen.classList.remove("active");
+  });
+  if (screens[screenKey]) {
+    screens[screenKey].classList.add("active");
+  }
 }
 
 const categorySelect = document.getElementById("category-select");
@@ -464,7 +469,7 @@ function renderSongList() {
     item.style.cursor = "pointer";
     item.innerHTML = `🎵 <strong>${song.title}</strong> (${song.producer || 'ボカロP未設定'})`;
     
-    // タップ・クリックで編集専用画面に遷移
+    // タップ・クリックで編集専用画面に遷移（確実に遷移させる処理）
     item.addEventListener("click", () => {
       openEditScreen(index);
     });
