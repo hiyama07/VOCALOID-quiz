@@ -96,6 +96,9 @@ async function loadSongsFromFirebase() {
         hasAddedNew = true;
       }
     }
+    
+    // データ読み込み後に曲数表示を更新
+    updateSelectedSongCount();
   } catch (error) {
     console.error("Firestore読み込みエラー:", error);
     alert("データベースの読み込みに失敗しました。");
@@ -134,10 +137,45 @@ function showScreen(screenId) {
 // UIエレメント制御（メニュー画面）
 const categorySelect = document.getElementById("category-select");
 const eraGroup = document.getElementById("era-group");
+const eraSelect = document.getElementById("era-select");
+const partSelect = document.getElementById("part-select");
 const playerModeSelect = document.getElementById("player-mode-select");
 const phraseModeGroup = document.getElementById("phrase-mode-group");
 const countSelect = document.getElementById("count-select");
 const rankingBox = document.getElementById("ranking-box");
+
+// カテゴリーで絞り込んだ対象楽曲を取得する共通関数
+function getFilteredSongs() {
+  const category = categorySelect.value;
+  const era = eraSelect.value;
+  const part = partSelect.value;
+
+  return songDatabase.filter(song => {
+    // 選択されたパートの歌詞データが存在するかチェック
+    if (!song.lyrics || !song.lyrics[part] || song.lyrics[part].length === 0) return false;
+
+    if (category === "halloffame") {
+      return song.hallOfFame;
+    } else if (category === "era") {
+      const year = song.year;
+      if (era === "~2011") return year <= 2011;
+      if (era === "2012~2015") return year >= 2012 && year <= 2015;
+      if (era === "2016~2018") return year >= 2016 && year <= 2018;
+      if (era === "2019~2021") return year >= 2019 && year <= 2021;
+      if (era === "2022~") return year >= 2022;
+    }
+    return true;
+  });
+}
+
+// タイトル下の「対象曲数: 全〇曲」表示を更新
+function updateSelectedSongCount() {
+  const filtered = getFilteredSongs();
+  const totalDisplay = document.getElementById("total-song-count");
+  if (totalDisplay) {
+    totalDisplay.innerText = `対象曲数: 全${filtered.length}曲`;
+  }
+}
 
 categorySelect.addEventListener("change", () => {
   if (categorySelect.value === "era") {
@@ -145,17 +183,26 @@ categorySelect.addEventListener("change", () => {
   } else {
     eraGroup.classList.add("hidden");
   }
+  updateSelectedSongCount();
   updateRankingDisplay();
 });
 
-document.getElementById("era-select").addEventListener("change", updateRankingDisplay);
-document.getElementById("part-select").addEventListener("change", updateRankingDisplay);
+eraSelect.addEventListener("change", () => {
+  updateSelectedSongCount();
+  updateRankingDisplay();
+});
+
+partSelect.addEventListener("change", () => {
+  updateSelectedSongCount();
+  updateRankingDisplay();
+});
+
 countSelect.addEventListener("change", updateRankingDisplay);
 
 playerModeSelect.addEventListener("change", () => {
   const mode = playerModeSelect.value;
   if (mode === "timeattack") {
-    phraseModeGroup.classList.add("hidden"); // タイムアタック時はフレーズ進行選択を非表示（手動固定）
+    phraseModeGroup.classList.add("hidden"); // タイムアタック時は手動固定
     countSelect.value = "50";                 // 出題数を50問に固定設定
     countSelect.disabled = true;              // 選択不可に固定
     rankingBox.classList.remove("hidden");
@@ -170,8 +217,8 @@ playerModeSelect.addEventListener("change", () => {
 // ランキングデータキーの生成（タイムアタックは50問固定）
 function getRankingKey() {
   const category = categorySelect.value;
-  const era = document.getElementById("era-select").value;
-  const part = document.getElementById("part-select").value;
+  const era = eraSelect.value;
+  const part = partSelect.value;
   const catKey = (category === "era") ? `era_${era}` : category;
 
   return `vocaloid_ta_rank_${catKey}_${part}_50`;
@@ -218,40 +265,54 @@ function updateRankingDisplay() {
   });
 }
 
+// 同じ曲の重複を「最大2回まで」に制限して問題リストを作成する処理
+function generateQuestionPool(songPool, targetCount) {
+  const result = [];
+  const usageCount = {};
+
+  // 出現回数を初期化
+  songPool.forEach(song => {
+    usageCount[song.title] = 0;
+  });
+
+  while (result.length < targetCount) {
+    // まだ使用回数が2回未満の曲だけ抽出
+    const availableSongs = songPool.filter(song => usageCount[song.title] < 2);
+
+    if (availableSongs.length === 0) {
+      // 登録曲が少なすぎて全曲が既に2回使われた場合はループ中断
+      break;
+    }
+
+    // ランダムに1曲ピックアップ
+    const randomIndex = Math.floor(Math.random() * availableSongs.length);
+    const selectedSong = availableSongs[randomIndex];
+
+    result.push(selectedSong);
+    usageCount[selectedSong.title]++;
+  }
+
+  return result;
+}
+
 // スタートボタン処理
 document.getElementById("start-btn").addEventListener("click", () => {
-  const category = categorySelect.value;
-  const era = document.getElementById("era-select").value;
-  const part = document.getElementById("part-select").value;
+  const part = partSelect.value;
   const phraseMode = document.getElementById("phrase-mode-select").value;
   const playerMode = playerModeSelect.value;
   
   // タイムアタック時は50問強制固定
   const count = (playerMode === "timeattack") ? 50 : parseInt(countSelect.value, 10);
 
-  let filtered = songDatabase.filter(song => {
-    if (!song.lyrics || !song.lyrics[part] || song.lyrics[part].length === 0) return false;
-
-    if (category === "halloffame") {
-      return song.hallOfFame;
-    } else if (category === "era") {
-      const year = song.year;
-      if (era === "~2011") return year <= 2011;
-      if (era === "2012~2015") return year >= 2012 && year <= 2015;
-      if (era === "2016~2018") return year >= 2016 && year <= 2018;
-      if (era === "2019~2021") return year >= 2019 && year <= 2021;
-      if (era === "2022~") return year >= 2022;
-    }
-    return true;
-  });
+  const filtered = getFilteredSongs();
 
   if (filtered.length === 0) {
     alert("条件に一致する曲が登録されていません。別の条件を選ぶか曲を追加してください。");
     return;
   }
 
-  filtered.sort(() => Math.random() - 0.5);
-  const questions = filtered.slice(0, Math.min(count, filtered.length));
+  // 同曲の登場を最大2回までに抑えて問題を生成
+  const questions = generateQuestionPool(filtered, count);
 
   gameState.questions = questions;
   gameState.currentIndex = 0;
@@ -523,6 +584,7 @@ document.getElementById("open-admin-btn").addEventListener("click", () => {
 });
 
 document.getElementById("close-admin-btn").addEventListener("click", () => {
+  updateSelectedSongCount();
   showScreen("menu-screen");
 });
 
@@ -586,6 +648,7 @@ document.getElementById("add-song-form").addEventListener("submit", async (e) =>
 
     document.getElementById("add-song-form").reset();
     renderSongList();
+    updateSelectedSongCount();
   } catch (error) {
     console.error("追加エラー:", error);
     alert("データの追加に失敗しました。");
@@ -662,6 +725,7 @@ document.getElementById("edit-song-form").addEventListener("submit", async (e) =
     songDatabase[currentEditingIndex] = { id: targetSong.id, ...updatedData };
     alert(`「${updatedData.title}」の情報を更新しました！`);
     renderSongList();
+    updateSelectedSongCount();
     showScreen("admin-screen");
   } catch (error) {
     console.error("更新エラー:", error);
@@ -696,6 +760,7 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
     deleteModal.classList.add("hidden");
     alert(`「${targetSong.title}」を削除しました。`);
     renderSongList();
+    updateSelectedSongCount();
     showScreen("admin-screen");
   } catch (error) {
     console.error("削除エラー:", error);
