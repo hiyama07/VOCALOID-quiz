@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { 
   getFirestore, 
   collection, 
-  getDocs, 
+  onSnapshot, 
   addDoc, 
   doc, 
   updateDoc,
@@ -23,7 +23,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SONGS_COLLECTION = "vocaloid_songs";
 
-// 初期サンプル楽曲データ
+// 初期サンプル楽曲データ（DBが空の場合のみ自動登録）
 const defaultSongs = [
   {
     title: "初音ミクの消失",
@@ -74,35 +74,33 @@ const defaultSongs = [
 let songDatabase = [];
 let currentEditingIndex = null;
 
-// Firestore から楽曲を取得
-async function loadSongsFromFirebase() {
-  try {
-    const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
-    songDatabase = [];
+// Firestore からリアルタイムに楽曲データを同期・リスニングする関数
+function setupRealtimeSongListener() {
+  const songsRef = collection(db, SONGS_COLLECTION);
 
-    querySnapshot.forEach((docSnap) => {
+  onSnapshot(songsRef, async (snapshot) => {
+    songDatabase = [];
+    snapshot.forEach((docSnap) => {
       songDatabase.push({
         id: docSnap.id,
         ...docSnap.data()
       });
     });
 
-    let hasAddedNew = false;
-    for (const song of defaultSongs) {
-      const exists = songDatabase.some(s => s.title === song.title);
-      if (!exists) {
-        const docRef = await addDoc(collection(db, SONGS_COLLECTION), song);
-        songDatabase.push({ id: docRef.id, ...song });
-        hasAddedNew = true;
+    // データベースが完全に空の場合、初期サンプル楽曲をセットアップ
+    if (songDatabase.length === 0 && snapshot.empty) {
+      for (const song of defaultSongs) {
+        await addDoc(songsRef, song);
       }
+      return; // 登録完了時に再度 onSnapshot がトリガーされます
     }
-    
-    // データ読み込み後に管理者画面の見出し曲数を更新
+
+    // リアルタイムに楽曲数表記とリスト表示を更新
     updateAdminSongCount();
-  } catch (error) {
-    console.error("Firestore読み込みエラー:", error);
-    alert("データベースの読み込みに失敗しました。");
-  }
+    renderSongList();
+  }, (error) => {
+    console.error("Firestoreリアルタイム同期エラー:", error);
+  });
 }
 
 // ゲーム状態管理
@@ -168,7 +166,7 @@ function getFilteredSongs() {
   });
 }
 
-// 管理者画面の「新規楽曲の追加 (登録済み楽曲数: 全〇曲)」表示を更新
+// 管理者画面の「新規楽曲の追加 (登録済み楽曲数: 全〇曲)」表示をリアルタイム更新
 function updateAdminSongCount() {
   const titleElem = document.getElementById("admin-add-song-title");
   if (titleElem) {
@@ -635,16 +633,13 @@ document.getElementById("add-song-form").addEventListener("submit", async (e) =>
   };
 
   try {
-    const docRef = await addDoc(collection(db, SONGS_COLLECTION), newSong);
-    songDatabase.push({ id: docRef.id, ...newSong });
+    await addDoc(collection(db, SONGS_COLLECTION), newSong);
 
     adminMsg.innerText = `✅ 「${title}」をFirestoreへ追加しました！`;
     adminMsg.className = "message success";
     adminMsg.classList.remove("hidden");
 
     document.getElementById("add-song-form").reset();
-    renderSongList();
-    updateAdminSongCount();
   } catch (error) {
     console.error("追加エラー:", error);
     alert("データの追加に失敗しました。");
@@ -718,10 +713,7 @@ document.getElementById("edit-song-form").addEventListener("submit", async (e) =
       const songRef = doc(db, SONGS_COLLECTION, targetSong.id);
       await updateDoc(songRef, updatedData);
     }
-    songDatabase[currentEditingIndex] = { id: targetSong.id, ...updatedData };
     alert(`「${updatedData.title}」の情報を更新しました！`);
-    renderSongList();
-    updateAdminSongCount();
     showScreen("admin-screen");
   } catch (error) {
     console.error("更新エラー:", error);
@@ -751,12 +743,9 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
     if (targetSong.id) {
       await deleteDoc(doc(db, SONGS_COLLECTION, targetSong.id));
     }
-    songDatabase.splice(currentEditingIndex, 1);
 
     deleteModal.classList.add("hidden");
     alert(`「${targetSong.title}」を削除しました。`);
-    renderSongList();
-    updateAdminSongCount();
     showScreen("admin-screen");
   } catch (error) {
     console.error("削除エラー:", error);
@@ -764,5 +753,5 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
   }
 });
 
-// 初期データロード実行
-loadSongsFromFirebase();
+// 起動時にリアルタイム同期を開始
+setupRealtimeSongListener();
