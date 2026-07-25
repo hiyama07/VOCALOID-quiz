@@ -1,3 +1,4 @@
+/* 基本スタイル */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -12,75 +13,62 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 20px;
+  padding: 1rem;
 }
 
 .container {
   width: 100%;
-  max-width: 500px;
+  max-width: 480px;
   background-color: #1e293b;
   border-radius: 16px;
-  padding: 28px 24px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   position: relative;
+  overflow: hidden;
 }
 
+/* 画面切替ロジック */
 .screen {
-  display: none;
-}
-
-.screen.active {
-  display: block;
-}
-
-.hidden {
   display: none !important;
 }
 
-h1 {
-  font-size: 1.5rem;
+.screen.active {
+  display: block !important;
+}
+
+h1, h2, h3 {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 1.2rem;
   color: #38bdf8;
-  letter-spacing: 0.05em;
 }
 
-h2 {
-  font-size: 1.3rem;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-h3 {
-  font-size: 1.1rem;
-  margin-bottom: 12px;
-  color: #94a3b8;
-}
-
-.setting-group,
-.form-group {
-  margin-bottom: 16px;
+.setting-group, .form-group {
+  margin-bottom: 1.2rem;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.5rem;
 }
 
-.setting-group label,
-.form-group label {
+.checkbox-group {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+label {
   font-size: 0.9rem;
   color: #cbd5e1;
 }
 
 select, input[type="text"], input[type="number"], textarea {
   width: 100%;
-  padding: 10px 12px;
-  background-color: #334155;
-  border: 1px solid #475569;
+  padding: 0.75rem;
   border-radius: 8px;
+  border: 1px solid #334155;
+  background-color: #0f172a;
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 1rem;
   outline: none;
-  transition: border-color 0.2s;
 }
 
 select:focus, input:focus, textarea:focus {
@@ -88,18 +76,18 @@ select:focus, input:focus, textarea:focus {
 }
 
 .btn {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
   width: 100%;
-  padding: 12px;
+  padding: 0.85rem;
   border: none;
   border-radius: 8px;
-  font-weight: bold;
   font-size: 1rem;
+  font-weight: bold;
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.btn:active {
+  opacity: 0.8;
 }
 
 .btn.primary {
@@ -107,226 +95,263 @@ select:focus, input:focus, textarea:focus {
   color: #0f172a;
 }
 
-.btn.primary:hover {
-  background-color: #7dd3fc;
-  transform: translateY(-1px);
-}
-
 .btn.secondary {
-  background-color: #475569;
+  background-color: #334155;
   color: #f8fafc;
 }
 
-.btn.secondary:hover {
-  background-color: #64748b;
+.btn.danger {
+  background-color: #ef4444;
+  color: #fff;
 }
 
-.small-btn {
+.btn.small-btn {
   width: auto;
-  padding: 6px 12px;
+  padding: 0.4rem 0.8rem;
   font-size: 0.85rem;
 }
 
-#start-btn {
-  margin-top: 24px;
-  padding: 14px;
-  font-size: 1.15rem;
-  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
-}
-
-.admin-link-wrapper {
-  margin-top: 24px;
-  text-align: center;
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .subtle-link-btn {
   background: none;
   border: none;
   color: #64748b;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   cursor: pointer;
   text-decoration: underline;
-  transition: color 0.2s;
-}
-
-.subtle-link-btn:hover {
-  color: #94a3b8;
-}
-
-.game-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  font-weight: bold;
-  color: #94a3b8;
-}
-
-.quit-btn {
-  background: transparent;
-  border: 1px solid #475569;
-  color: #94a3b8;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.quit-btn:hover {
-  background: #334155;
-  color: #f87171;
-  border-color: #f87171;
-}
-
-.timer {
-  font-size: 1.2rem;
-  color: #f43f5e;
-}
-
-.lyrics-box {
-  background-color: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 10px;
-  padding: 20px;
-  min-height: 160px;
-  margin-bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  justify-content: center;
-}
-
-.lyric-line {
-  font-size: 1.05rem;
-  line-height: 1.5;
-  animation: fadeIn 0.4s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.btn-group {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.choices-box {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.song-detail {
-  background-color: #0f172a;
-  padding: 16px;
-  border-radius: 8px;
-  margin: 20px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.final-score-text {
-  font-size: 1.2rem;
+  margin-top: 1rem;
+  width: 100%;
   text-align: center;
-  margin: 30px 0;
-}
-
-.highlight-score {
-  font-size: 2.5rem;
-  color: #38bdf8;
-  font-weight: bold;
-}
-
-.checkbox-group label,
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.message {
-  padding: 10px 12px;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  font-size: 0.9rem;
-}
-
-.message.error {
-  background-color: #450a0a;
-  color: #fca5a5;
-  border: 1px solid #991b1b;
-}
-
-.message.success {
-  background-color: #052e16;
-  color: #86efac;
-  border: 1px solid #166534;
-}
-
-/* 管理画面スタイル */
-.admin-section {
-  background: #0f172a;
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid #334155;
-  margin-bottom: 20px;
-}
-
-.song-list-container {
-  max-height: 280px;
-  overflow-y: auto;
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-details.song-item {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-details.song-item summary {
-  padding: 12px;
-  font-weight: bold;
-  color: #38bdf8;
-  cursor: pointer;
-  user-select: none;
-}
-
-details.song-item summary:hover {
-  background: #334155;
-}
-
-details.song-item[open] summary {
-  border-bottom: 1px solid #334155;
-}
-
-.edit-form-content {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .form-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
+}
+
+.form-header h2 {
+  margin-bottom: 0;
+}
+
+/* ランキング表示エリア */
+.ranking-box {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.ranking-box h3 {
+  font-size: 0.95rem;
+  color: #f59e0b;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.ranking-list {
+  list-style: none;
+  font-size: 0.88rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ranking-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem;
+  background-color: #1e293b;
+  border-radius: 4px;
+}
+
+.ranking-rank {
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+.ranking-time {
+  font-family: monospace;
+  color: #4ade80;
+}
+
+/* クイズプレイ画面 */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.timer {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #f59e0b;
+  font-family: monospace;
+}
+
+.quit-btn {
+  background: none;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lyrics-box {
+  background-color: #0f172a;
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 120px;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lyric-line {
+  font-size: 1.05rem;
+  line-height: 1.4;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.choices-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* 管理者画面 */
+.admin-section {
+  background-color: #0f172a;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.admin-section h3 {
+  text-align: left;
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+  color: #e2e8f0;
 }
 
 .divider {
   border: none;
   border-top: 1px solid #334155;
-  margin: 20px 0;
+  margin: 1.5rem 0;
+}
+
+.song-list-container {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.song-item {
+  padding: 0.6rem;
+  background-color: #1e293b;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  border: 1px solid #334155;
+  transition: background-color 0.2s;
+}
+
+.song-item:hover {
+  background-color: #334155;
+}
+
+/* メッセージ表示 */
+.message {
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.message.error {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid #ef4444;
+}
+
+.message.success {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid #4ade80;
+}
+
+/* 最終結果 */
+.final-score-text {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.highlight-score {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+.time-attack-result {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background-color: #0f172a;
+  border-radius: 8px;
+  border: 1px solid #334155;
+}
+
+.new-record-badge {
+  display: inline-block;
+  background-color: #f59e0b;
+  color: #0f172a;
+  font-weight: bold;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+/* モーダル */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #1e293b;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.hidden {
+  display: none !important;
 }
