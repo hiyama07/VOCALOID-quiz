@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ボカロ歌詞クイズ</title>
+  <title>ボカロ歌詞イントロクイズ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -43,7 +43,7 @@
         </select>
       </div>
 
-      <div class="setting-group">
+      <div id="phrase-mode-group" class="setting-group">
         <label for="phrase-mode-select">フレーズ進行</label>
         <select id="phrase-mode-select">
           <option value="auto">自動 (15秒ごとに進行)</option>
@@ -51,11 +51,12 @@
         </select>
       </div>
 
-      <!-- プレイモード（表示テキストのみ「複数人用(早押し3択)」に変更） -->
+      <!-- プレイモード -->
       <div class="setting-group">
         <label for="player-mode-select">プレイモード</label>
         <select id="player-mode-select">
-          <option value="solo">1人プレイ (入力形式)</option>
+          <option value="solo">1人プレイ (通常)</option>
+          <option value="timeattack">⏱️ タイムアタック (1人・全問クリア計測)</option>
           <option value="multi">複数人用(早押し3択)</option>
         </select>
       </div>
@@ -69,6 +70,14 @@
           <option value="20">20問</option>
           <option value="50">50問</option>
         </select>
+      </div>
+
+      <!-- タイムアタック用 ランキング表示エリア -->
+      <div id="ranking-box" class="ranking-box hidden">
+        <h3>🏆 TOP3 クリアタイム</h3>
+        <ul id="ranking-list" class="ranking-list">
+          <!-- JSで動的生成 -->
+        </ul>
       </div>
 
       <button id="start-btn" class="btn primary">ゲームスタート！</button>
@@ -127,6 +136,11 @@
       <div class="final-score-text">
         <p>あなたの正解数は...</p>
         <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
+        
+        <div id="time-attack-result" class="time-attack-result hidden">
+          <div id="new-record-badge" class="new-record-badge hidden">🎉 TOP3 ランクイン！</div>
+          <p>クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
+        </div>
       </div>
       <button id="back-to-menu-btn" class="btn primary">メニューに戻る</button>
     </div>
@@ -183,7 +197,7 @@
       </div>
     </div>
 
-    <!-- 6. 楽曲編集専用画面（完全独立画面） -->
+    <!-- 6. 楽曲編集専用画面 -->
     <div id="edit-song-screen" class="screen">
       <div class="form-header">
         <h2>楽曲情報の編集</h2>
