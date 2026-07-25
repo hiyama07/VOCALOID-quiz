@@ -97,8 +97,8 @@ async function loadSongsFromFirebase() {
       }
     }
     
-    // データ読み込み後に曲数表示を更新
-    updateSelectedSongCount();
+    // データ読み込み後に管理者画面の見出し曲数を更新
+    updateAdminSongCount();
   } catch (error) {
     console.error("Firestore読み込みエラー:", error);
     alert("データベースの読み込みに失敗しました。");
@@ -168,12 +168,11 @@ function getFilteredSongs() {
   });
 }
 
-// タイトル下の「対象曲数: 全〇曲」表示を更新
-function updateSelectedSongCount() {
-  const filtered = getFilteredSongs();
-  const totalDisplay = document.getElementById("total-song-count");
-  if (totalDisplay) {
-    totalDisplay.innerText = `対象曲数: 全${filtered.length}曲`;
+// 管理者画面の「新規楽曲の追加 (登録済み楽曲数: 全〇曲)」表示を更新
+function updateAdminSongCount() {
+  const titleElem = document.getElementById("admin-add-song-title");
+  if (titleElem) {
+    titleElem.innerText = `新規楽曲の追加 (登録済み楽曲数: 全${songDatabase.length}曲)`;
   }
 }
 
@@ -183,17 +182,14 @@ categorySelect.addEventListener("change", () => {
   } else {
     eraGroup.classList.add("hidden");
   }
-  updateSelectedSongCount();
   updateRankingDisplay();
 });
 
 eraSelect.addEventListener("change", () => {
-  updateSelectedSongCount();
   updateRankingDisplay();
 });
 
 partSelect.addEventListener("change", () => {
-  updateSelectedSongCount();
   updateRankingDisplay();
 });
 
@@ -580,11 +576,11 @@ const addTitleInput = document.getElementById("add-title");
 document.getElementById("open-admin-btn").addEventListener("click", () => {
   adminMsg.classList.add("hidden");
   renderSongList();
+  updateAdminSongCount();
   showScreen("admin-screen");
 });
 
 document.getElementById("close-admin-btn").addEventListener("click", () => {
-  updateSelectedSongCount();
   showScreen("menu-screen");
 });
 
@@ -648,7 +644,7 @@ document.getElementById("add-song-form").addEventListener("submit", async (e) =>
 
     document.getElementById("add-song-form").reset();
     renderSongList();
-    updateSelectedSongCount();
+    updateAdminSongCount();
   } catch (error) {
     console.error("追加エラー:", error);
     alert("データの追加に失敗しました。");
@@ -725,7 +721,7 @@ document.getElementById("edit-song-form").addEventListener("submit", async (e) =
     songDatabase[currentEditingIndex] = { id: targetSong.id, ...updatedData };
     alert(`「${updatedData.title}」の情報を更新しました！`);
     renderSongList();
-    updateSelectedSongCount();
+    updateAdminSongCount();
     showScreen("admin-screen");
   } catch (error) {
     console.error("更新エラー:", error);
@@ -760,7 +756,7 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
     deleteModal.classList.add("hidden");
     alert(`「${targetSong.title}」を削除しました。`);
     renderSongList();
-    updateSelectedSongCount();
+    updateAdminSongCount();
     showScreen("admin-screen");
   } catch (error) {
     console.error("削除エラー:", error);
