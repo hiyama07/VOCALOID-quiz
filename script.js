@@ -72,9 +72,9 @@ const defaultSongs = [
 ];
 
 let songDatabase = [];
-let currentEditingIndex = null; // 現在編集中の楽曲インデックス
+let currentEditingIndex = null;
 
-// Firestore から楽曲を取得（未登録の初期楽曲があれば自動補填）
+// Firestore から楽曲を取得
 async function loadSongsFromFirebase() {
   try {
     const querySnapshot = await getDocs(collection(db, SONGS_COLLECTION));
@@ -96,13 +96,9 @@ async function loadSongsFromFirebase() {
         hasAddedNew = true;
       }
     }
-
-    if (hasAddedNew) {
-      console.log("初期楽曲をFirestoreへ同期しました。");
-    }
   } catch (error) {
     console.error("Firestore読み込みエラー:", error);
-    alert("データベースの読み込みに失敗しました。Firestoreのセキュリティルールをご確認ください。");
+    alert("データベースの読み込みに失敗しました。");
   }
 }
 
@@ -116,28 +112,31 @@ let gameState = {
   displayedPhraseCount: 0,
   timerInterval: null,
   timeLeft: 15,
-  mode: "solo",
+  mode: "solo", // "solo" | "timeattack" | "multi"
   phraseMode: "auto",
-  selectedPart: "intro"
+  selectedPart: "intro",
+  // タイムアタック用
+  taStartTime: 0,
+  taTotalTimeMs: 0
 };
 
-// 画面の切り替え処理（すべての.screen要素を非表示にして対象だけactiveにする）
+// 画面切り替え処理
 function showScreen(screenId) {
   const allScreens = document.querySelectorAll(".screen");
-  allScreens.forEach(screen => {
-    screen.classList.remove("active");
-  });
+  allScreens.forEach(screen => screen.classList.remove("active"));
 
   const targetScreen = document.getElementById(screenId);
   if (targetScreen) {
     targetScreen.classList.add("active");
-  } else {
-    console.error("画面が見つかりません:", screenId);
   }
 }
 
+// UIエレメント制御（メニュー画面）
 const categorySelect = document.getElementById("category-select");
 const eraGroup = document.getElementById("era-group");
+const playerModeSelect = document.getElementById("player-mode-select");
+const phraseModeGroup = document.getElementById("phrase-mode-group");
+const rankingBox = document.getElementById("ranking-box");
 
 categorySelect.addEventListener("change", () => {
   if (categorySelect.value === "era") {
@@ -145,7 +144,76 @@ categorySelect.addEventListener("change", () => {
   } else {
     eraGroup.classList.add("hidden");
   }
+  updateRankingDisplay();
 });
+
+document.getElementById("era-select").addEventListener("change", updateRankingDisplay);
+document.getElementById("part-select").addEventListener("change", updateRankingDisplay);
+document.getElementById("count-select").addEventListener("change", updateRankingDisplay);
+
+playerModeSelect.addEventListener("change", () => {
+  const mode = playerModeSelect.value;
+  if (mode === "timeattack") {
+    phraseModeGroup.classList.add("hidden"); // タイムアタック時はフレーズ進行選択を非表示（手動固定）
+    rankingBox.classList.remove("hidden");
+    updateRankingDisplay();
+  } else {
+    phraseModeGroup.classList.remove("hidden");
+    rankingBox.classList.add("hidden");
+  }
+});
+
+// ランキングデータキーの生成
+function getRankingKey() {
+  const category = categorySelect.value;
+  const era = document.getElementById("era-select").value;
+  const part = document.getElementById("part-select").value;
+  const count = document.getElementById("count-select").value;
+  const catKey = (category === "era") ? `era_${era}` : category;
+
+  return `vocaloid_ta_rank_${catKey}_${part}_${count}`;
+}
+
+// ミリ秒を "01:23.45" 形式にフォーマット
+function formatTime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  const millis = Math.floor((ms % 1000) / 10);
+
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+  const msStr = String(millis).padStart(2, '0');
+
+  return `${mm}:${ss}.${msStr}`;
+}
+
+// ランキング表示の更新
+function updateRankingDisplay() {
+  if (playerModeSelect.value !== "timeattack") return;
+
+  const key = getRankingKey();
+  const rawData = localStorage.getItem(key);
+  const rankingList = document.getElementById("ranking-list");
+  rankingList.innerHTML = "";
+
+  const ranks = rawData ? JSON.parse(rawData) : [];
+
+  if (ranks.length === 0) {
+    rankingList.innerHTML = '<li class="ranking-item" style="color:#94a3b8; justify-content:center;">記録がまだありません</li>';
+    return;
+  }
+
+  ranks.slice(0, 3).forEach((item, idx) => {
+    const li = document.createElement("li");
+    li.className = "ranking-item";
+    li.innerHTML = `
+      <span class="ranking-rank">${idx + 1}位</span>
+      <span class="ranking-time">${formatTime(item.timeMs)}</span>
+    `;
+    rankingList.appendChild(li);
+  });
+}
 
 // スタートボタン処理
 document.getElementById("start-btn").addEventListener("click", () => {
@@ -153,7 +221,7 @@ document.getElementById("start-btn").addEventListener("click", () => {
   const era = document.getElementById("era-select").value;
   const part = document.getElementById("part-select").value;
   const phraseMode = document.getElementById("phrase-mode-select").value;
-  const playerMode = document.getElementById("player-mode-select").value;
+  const playerMode = playerModeSelect.value;
   const count = parseInt(document.getElementById("count-select").value, 10);
 
   let filtered = songDatabase.filter(song => {
@@ -166,7 +234,7 @@ document.getElementById("start-btn").addEventListener("click", () => {
       if (era === "~2011") return year <= 2011;
       if (era === "2012~2015") return year >= 2012 && year <= 2015;
       if (era === "2016~2018") return year >= 2016 && year <= 2018;
-      if (era === "2019~2021") return year >= 2019 && year <= 2021;
+      if (era === "2019~2021") return year >= 2019 && year <= 2011;
       if (era === "2022~") return year >= 2022;
     }
     return true;
@@ -184,11 +252,18 @@ document.getElementById("start-btn").addEventListener("click", () => {
   gameState.currentIndex = 0;
   gameState.score = 0;
   gameState.mode = playerMode;
-  gameState.phraseMode = phraseMode;
+  gameState.phraseMode = (playerMode === "timeattack") ? "manual" : phraseMode;
   gameState.selectedPart = part;
+  gameState.taTotalTimeMs = 0;
 
   setupUIForModes();
   showScreen("game-screen");
+
+  if (gameState.mode === "timeattack") {
+    gameState.taStartTime = Date.now();
+    startStopwatch();
+  }
+
   loadQuestion();
 });
 
@@ -198,7 +273,7 @@ function setupUIForModes() {
   const timerDisplay = document.getElementById("timer-display");
   const manualWrapper = document.getElementById("manual-next-wrapper");
 
-  if (gameState.mode === "solo") {
+  if (gameState.mode === "solo" || gameState.mode === "timeattack") {
     soloArea.classList.remove("hidden");
     multiArea.classList.add("hidden");
   } else {
@@ -212,13 +287,30 @@ function setupUIForModes() {
     timerDisplay.classList.remove("hidden");
     manualWrapper.classList.add("hidden");
   } else {
-    timerDisplay.classList.add("hidden");
+    if (gameState.mode === "timeattack") {
+      timerDisplay.classList.remove("hidden"); // ストップウォッチ表示
+    } else {
+      timerDisplay.classList.add("hidden");
+    }
     manualWrapper.classList.remove("hidden");
   }
 }
 
-function loadQuestion() {
+// タイムアタック用ストップウォッチ
+function startStopwatch() {
   clearInterval(gameState.timerInterval);
+  const timerDisplay = document.getElementById("timer-display");
+
+  gameState.timerInterval = setInterval(() => {
+    const elapsed = Date.now() - gameState.taStartTime;
+    timerDisplay.innerText = formatTime(elapsed);
+  }, 30);
+}
+
+function loadQuestion() {
+  if (gameState.mode !== "timeattack") {
+    clearInterval(gameState.timerInterval);
+  }
   
   const current = gameState.questions[gameState.currentIndex];
   gameState.currentSong = current;
@@ -238,7 +330,7 @@ function loadQuestion() {
 
   addNextPhrase();
 
-  if (gameState.phraseMode === "auto") {
+  if (gameState.phraseMode === "auto" && gameState.mode !== "timeattack") {
     startTimer();
   }
 }
@@ -336,7 +428,9 @@ document.getElementById("pass-btn").addEventListener("click", () => {
 });
 
 function finishQuestion(isCorrect, isPass = false) {
-  clearInterval(gameState.timerInterval);
+  if (gameState.mode !== "timeattack") {
+    clearInterval(gameState.timerInterval);
+  }
 
   if (isCorrect) {
     gameState.score++;
@@ -363,13 +457,53 @@ document.getElementById("next-question-btn").addEventListener("click", () => {
     showScreen("game-screen");
     loadQuestion();
   } else {
+    // 全問終了
+    if (gameState.mode === "timeattack") {
+      clearInterval(gameState.timerInterval);
+      gameState.taTotalTimeMs = Date.now() - gameState.taStartTime;
+      handleTimeAttackFinish();
+    } else {
+      document.getElementById("time-attack-result").classList.add("hidden");
+    }
+
     document.getElementById("final-score").innerText = gameState.score;
     document.getElementById("final-total").innerText = gameState.questions.length;
     showScreen("final-screen");
   }
 });
 
+// タイムアタック完了処理＆ランキング記録
+function handleTimeAttackFinish() {
+  const totalMs = gameState.taTotalTimeMs;
+  const timeAttackResultArea = document.getElementById("time-attack-result");
+  const clearTimeDisplay = document.getElementById("final-clear-time");
+  const newRecordBadge = document.getElementById("new-record-badge");
+
+  timeAttackResultArea.classList.remove("hidden");
+  clearTimeDisplay.innerText = formatTime(totalMs);
+
+  const key = getRankingKey();
+  const rawData = localStorage.getItem(key);
+  let ranks = rawData ? JSON.parse(rawData) : [];
+
+  ranks.push({ timeMs: totalMs, date: new Date().toLocaleDateString() });
+  ranks.sort((a, b) => a.timeMs - b.timeMs);
+
+  // TOP3以内に入ったかチェック
+  const rankIndex = ranks.findIndex(item => item.timeMs === totalMs);
+  if (rankIndex >= 0 && rankIndex < 3) {
+    newRecordBadge.classList.remove("hidden");
+  } else {
+    newRecordBadge.classList.add("hidden");
+  }
+
+  // TOP3まで保持
+  ranks = ranks.slice(0, 3);
+  localStorage.setItem(key, JSON.stringify(ranks));
+}
+
 document.getElementById("back-to-menu-btn").addEventListener("click", () => {
+  updateRankingDisplay();
   showScreen("menu-screen");
 });
 
@@ -465,7 +599,6 @@ function renderSongList() {
     item.style.cursor = "pointer";
     item.innerHTML = `🎵 <strong>${song.title}</strong> (${song.producer || 'ボカロP未設定'})`;
     
-    // タップ・クリックで編集専用画面に遷移
     item.addEventListener("click", () => {
       openEditScreen(index);
     });
@@ -488,11 +621,9 @@ function openEditScreen(index) {
   document.getElementById("edit-chorus").value = song.lyrics?.chorus ? song.lyrics.chorus.join("\n") : "";
   document.getElementById("edit-prechorus").value = song.lyrics?.prechorus ? song.lyrics.prechorus.join("\n") : "";
 
-  // 編集専用画面（edit-song-screen）を表示
   showScreen("edit-song-screen");
 }
 
-// 編集画面からのキャンセルボタン
 document.getElementById("cancel-edit-btn").addEventListener("click", () => {
   showScreen("admin-screen");
 });
@@ -533,7 +664,7 @@ document.getElementById("edit-song-form").addEventListener("submit", async (e) =
   }
 });
 
-// 削除モーダルダイアログの制御
+// 削除モーダルダイアログ制御
 const deleteModal = document.getElementById("delete-modal");
 
 document.getElementById("open-delete-modal-btn").addEventListener("click", () => {
@@ -547,7 +678,6 @@ document.getElementById("cancel-delete-btn").addEventListener("click", () => {
   deleteModal.classList.add("hidden");
 });
 
-// 本当に削除する（実行）
 document.getElementById("confirm-delete-btn").addEventListener("click", async () => {
   if (currentEditingIndex === null) return;
   const targetSong = songDatabase[currentEditingIndex];
@@ -568,5 +698,5 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
   }
 });
 
-// 起動時にデータ読み込み実行
+// 初期データロード実行
 loadSongsFromFirebase();
