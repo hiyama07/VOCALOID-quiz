@@ -75,6 +75,12 @@ select:focus, input:focus, textarea:focus {
   border-color: #38bdf8;
 }
 
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #1e293b;
+}
+
 .btn {
   width: 100%;
   padding: 0.85rem;
