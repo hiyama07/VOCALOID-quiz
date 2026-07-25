@@ -56,7 +56,7 @@
         <label for="player-mode-select">プレイモード</label>
         <select id="player-mode-select">
           <option value="solo">1人プレイ (通常)</option>
-          <option value="timeattack">⏱️ タイムアタック (1人・全問クリア計測)</option>
+          <option value="timeattack">⏱️ タイムアタック (1人・50問固定)</option>
           <option value="multi">複数人用(早押し3択)</option>
         </select>
       </div>
@@ -74,7 +74,7 @@
 
       <!-- タイムアタック用 ランキング表示エリア -->
       <div id="ranking-box" class="ranking-box hidden">
-        <h3>🏆 TOP3 クリアタイム</h3>
+        <h3>🏆 50問完走 TOP3 クリアタイム</h3>
         <ul id="ranking-list" class="ranking-list">
           <!-- JSで動的生成 -->
         </ul>
@@ -90,8 +90,8 @@
     <!-- 2. クイズプレイ画面 -->
     <div id="game-screen" class="screen">
       <div class="game-header">
-        <span id="question-progress">第 1 / 10 問</span>
-        <div id="timer-display" class="timer">15</div>
+        <span id="question-progress">第 1 / 50 問</span>
+        <div id="timer-display" class="timer">00:00.00</div>
         <button id="quit-btn" class="quit-btn">中断</button>
       </div>
 
@@ -135,11 +135,11 @@
       <h2>結果発表</h2>
       <div class="final-score-text">
         <p>あなたの正解数は...</p>
-        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
+        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">50</span></div>
         
         <div id="time-attack-result" class="time-attack-result hidden">
           <div id="new-record-badge" class="new-record-badge hidden">🎉 TOP3 ランクイン！</div>
-          <p>クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
+          <p>50問クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
         </div>
       </div>
       <button id="back-to-menu-btn" class="btn primary">メニューに戻る</button>
