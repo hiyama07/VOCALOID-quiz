@@ -136,6 +136,7 @@ const categorySelect = document.getElementById("category-select");
 const eraGroup = document.getElementById("era-group");
 const playerModeSelect = document.getElementById("player-mode-select");
 const phraseModeGroup = document.getElementById("phrase-mode-group");
+const countSelect = document.getElementById("count-select");
 const rankingBox = document.getElementById("ranking-box");
 
 categorySelect.addEventListener("change", () => {
@@ -149,29 +150,31 @@ categorySelect.addEventListener("change", () => {
 
 document.getElementById("era-select").addEventListener("change", updateRankingDisplay);
 document.getElementById("part-select").addEventListener("change", updateRankingDisplay);
-document.getElementById("count-select").addEventListener("change", updateRankingDisplay);
+countSelect.addEventListener("change", updateRankingDisplay);
 
 playerModeSelect.addEventListener("change", () => {
   const mode = playerModeSelect.value;
   if (mode === "timeattack") {
     phraseModeGroup.classList.add("hidden"); // タイムアタック時はフレーズ進行選択を非表示（手動固定）
+    countSelect.value = "50";                 // 出題数を50問に固定設定
+    countSelect.disabled = true;              // 選択不可に固定
     rankingBox.classList.remove("hidden");
     updateRankingDisplay();
   } else {
     phraseModeGroup.classList.remove("hidden");
+    countSelect.disabled = false;
     rankingBox.classList.add("hidden");
   }
 });
 
-// ランキングデータキーの生成
+// ランキングデータキーの生成（タイムアタックは50問固定）
 function getRankingKey() {
   const category = categorySelect.value;
   const era = document.getElementById("era-select").value;
   const part = document.getElementById("part-select").value;
-  const count = document.getElementById("count-select").value;
   const catKey = (category === "era") ? `era_${era}` : category;
 
-  return `vocaloid_ta_rank_${catKey}_${part}_${count}`;
+  return `vocaloid_ta_rank_${catKey}_${part}_50`;
 }
 
 // ミリ秒を "01:23.45" 形式にフォーマット
@@ -222,7 +225,9 @@ document.getElementById("start-btn").addEventListener("click", () => {
   const part = document.getElementById("part-select").value;
   const phraseMode = document.getElementById("phrase-mode-select").value;
   const playerMode = playerModeSelect.value;
-  const count = parseInt(document.getElementById("count-select").value, 10);
+  
+  // タイムアタック時は50問強制固定
+  const count = (playerMode === "timeattack") ? 50 : parseInt(countSelect.value, 10);
 
   let filtered = songDatabase.filter(song => {
     if (!song.lyrics || !song.lyrics[part] || song.lyrics[part].length === 0) return false;
@@ -234,7 +239,7 @@ document.getElementById("start-btn").addEventListener("click", () => {
       if (era === "~2011") return year <= 2011;
       if (era === "2012~2015") return year >= 2012 && year <= 2015;
       if (era === "2016~2018") return year >= 2016 && year <= 2018;
-      if (era === "2019~2021") return year >= 2019 && year <= 2011;
+      if (era === "2019~2021") return year >= 2019 && year <= 2021;
       if (era === "2022~") return year >= 2022;
     }
     return true;
