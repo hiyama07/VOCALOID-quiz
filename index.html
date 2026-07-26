@@ -54,7 +54,7 @@
         <label for="player-mode-select">プレイモード</label>
         <select id="player-mode-select">
           <option value="solo">1人プレイ (入力式)</option>
-          <option value="multi">複数人プレイ (順番3択)</option>
+          <option value="multi">複数人モード (早押し3択)</option>
           <option value="vs">⚔️ 2人対戦モード (横画面早押し)</option>
           <option value="timeattack">⏱️ タイムアタック (1人・50問固定)</option>
         </select>
@@ -82,7 +82,7 @@
       </div>
     </div>
 
-    <!-- 2. 通常(1人 / 複数人順番) クイズ画面 -->
+    <!-- 2. 通常(1人 / 複数人早押し) クイズ画面 -->
     <div id="game-screen" class="screen">
       <div class="game-header">
         <span id="question-progress">第 1 / 10 問</span>
@@ -105,9 +105,17 @@
         </div>
       </div>
 
-      <!-- 複数人用（3択選択肢） -->
-      <div id="multi-answer-choice-area" class="setting-group hidden">
-        <p style="text-align:center; font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem;">正解を選んでください</p>
+      <!-- 複数人用（早押しボタン） -->
+      <div id="multi-answer-buzz-area" class="setting-group hidden">
+        <button id="multi-buzz-btn" class="btn primary multi-buzz-large-btn">PUSH!! (早押し)</button>
+      </div>
+    </div>
+
+    <!-- 複数人モード用の3択モーダル -->
+    <div id="multi-choice-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3 style="margin-bottom:0.8rem;">回答を選択</h3>
+        <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
         <div id="multi-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
       </div>
     </div>
@@ -143,7 +151,7 @@
         </div>
       </div>
 
-      <!-- 早押し後の選択肢モーダル -->
+      <!-- VS早押し後の選択肢モーダル -->
       <div id="vs-choice-overlay" class="modal-overlay hidden">
         <div class="modal-content">
           <h3 id="vs-answering-title">1P の回答</h3>
