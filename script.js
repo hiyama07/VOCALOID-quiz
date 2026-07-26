@@ -74,7 +74,7 @@ const defaultSongs = [
 let songDatabase = [];
 let currentEditingIndex = null;
 
-// Firestore からリアルタイムに楽曲データを同期・リスニング
+// Firestore からリアルタイムに楽曲データを同期
 function setupRealtimeSongListener() {
   const songsRef = collection(db, SONGS_COLLECTION);
 
@@ -111,13 +111,13 @@ let gameState = {
   displayedPhraseCount: 0,
   timerInterval: null,
   timeLeft: 15,
-  mode: "solo", // "solo" | "timeattack" | "vs"
+  mode: "solo", // "solo" | "multi" | "vs" | "timeattack"
   phraseMode: "auto",
   selectedPart: "intro",
   // タイムアタック用
   taStartTime: 0,
   taTotalTimeMs: 0,
-  // 対戦モード(VS)用データ
+  // 2人対戦(VS)用データ
   p1Score: 0,
   p2Score: 0,
   questionStartTime: 0,
@@ -144,7 +144,7 @@ function showScreen(screenId) {
   }
 }
 
-// UIエレメント制御（メニュー画面）
+// UIエレメント参照
 const categorySelect = document.getElementById("category-select");
 const eraGroup = document.getElementById("era-group");
 const eraSelect = document.getElementById("era-select");
@@ -200,7 +200,6 @@ playerModeSelect.addEventListener("change", () => {
   const mode = playerModeSelect.value;
   if (mode === "timeattack") {
     phraseModeGroup.classList.add("hidden");
-    countSelect.value = "50";
     countSelect.disabled = true;
     rankingBox.classList.remove("hidden");
     updateRankingDisplay();
@@ -263,7 +262,12 @@ function generateQuestionPool(songPool, targetCount) {
 
   while (result.length < targetCount) {
     const availableSongs = songPool.filter(song => usageCount[song.title] < 2);
-    if (availableSongs.length === 0) break;
+    if (availableSongs.length === 0) {
+      const randomIndex = Math.floor(Math.random() * songPool.length);
+      result.push(songPool[randomIndex]);
+      if (result.length >= targetCount) break;
+      continue;
+    }
 
     const randomIndex = Math.floor(Math.random() * availableSongs.length);
     const selectedSong = availableSongs[randomIndex];
@@ -280,7 +284,9 @@ document.getElementById("start-btn").addEventListener("click", () => {
   const part = partSelect.value;
   const phraseMode = document.getElementById("phrase-mode-select").value;
   const playerMode = playerModeSelect.value;
-  const count = (playerMode === "timeattack") ? 50 : parseInt(countSelect.value, 10);
+  
+  const selectedCount = parseInt(countSelect.value, 10);
+  const count = (playerMode === "timeattack") ? 50 : selectedCount;
 
   const filtered = getFilteredSongs();
 
@@ -346,7 +352,7 @@ function startStopwatch() {
   }, 30);
 }
 
-// --- 通常(1人)クイズ処理 ---
+// --- 通常(1人・複数人順番)クイズ処理 ---
 function loadQuestion() {
   if (gameState.mode !== "timeattack") {
     clearInterval(gameState.timerInterval);
@@ -357,9 +363,12 @@ function loadQuestion() {
   gameState.currentPhrases = current.lyrics[gameState.selectedPart];
   gameState.displayedPhraseCount = 0;
 
-  document.getElementById("question-progress").innerText = 
-    `第 ${gameState.currentIndex + 1} / ${gameState.questions.length} 問`;
+  let progressText = `第 ${gameState.currentIndex + 1} / ${gameState.questions.length} 問`;
+  if (gameState.mode === "multi") {
+    progressText += ` (回答順: プレイヤー${(gameState.currentIndex % 2) + 1})`;
+  }
 
+  document.getElementById("question-progress").innerText = progressText;
   document.getElementById("lyrics-box").innerHTML = "";
   document.getElementById("solo-input").value = "";
 
@@ -452,7 +461,7 @@ function finishQuestion(isCorrect, isPass = false) {
   showScreen("answer-screen");
 }
 
-// --- 対戦モード(VS)処理 ---
+// --- ⚔️ 2人対戦モード(VS)処理 ---
 function loadVSQuestion() {
   clearInterval(gameState.timerInterval);
 
@@ -472,7 +481,6 @@ function loadVSQuestion() {
   const choiceOverlay = document.getElementById("vs-choice-overlay");
   choiceOverlay.classList.add("hidden");
 
-  // ボタン活性化
   document.getElementById("vs-p1-btn").disabled = false;
   document.getElementById("vs-p2-btn").disabled = false;
 
@@ -515,20 +523,16 @@ function startVSTimer() {
   }, 1000);
 }
 
-// 早押しボタン処理 (1P / 2P)
 function handleBuzz(playerNum) {
   clearInterval(gameState.timerInterval);
   gameState.answeringPlayer = playerNum;
 
-  // 早押しタイム計算 (秒)
   const elapsedMs = Date.now() - gameState.questionStartTime;
   gameState.answerTimeSec = (elapsedMs / 1000).toFixed(2);
 
-  // ボタン非活性化
   document.getElementById("vs-p1-btn").disabled = true;
   document.getElementById("vs-p2-btn").disabled = true;
 
-  // 3択肢モーダルを出す
   setupVSChoices();
 }
 
@@ -597,7 +601,6 @@ function finishVSQuestion(isCorrect) {
     document.getElementById("result-status").style.color = "#f87171";
   }
 
-  // 解答情報とタイムを表示
   const vsInfo = document.getElementById("vs-answer-info");
   vsInfo.classList.remove("hidden");
   document.getElementById("vs-answer-player").innerText = gameState.answeringPlayer === 1 ? "1P (赤)" : "2P (青)";
@@ -621,7 +624,6 @@ document.getElementById("next-question-btn").addEventListener("click", () => {
       loadQuestion();
     }
   } else {
-    // 全問終了
     if (gameState.mode === "vs") {
       showVSSubmittal();
     } else {
@@ -699,7 +701,7 @@ document.getElementById("back-to-menu-btn").addEventListener("click", () => {
   showScreen("menu-screen");
 });
 
-// 管理者メニュー操作
+// 管理者メニュー操作（※イベントリスナー復旧箇所）
 const adminMsg = document.getElementById("admin-msg");
 const addTitleInput = document.getElementById("add-title");
 
