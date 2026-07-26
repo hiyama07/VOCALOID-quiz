@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ボカロ歌詞クイズ</title>
+  <title>ボカロ歌詞イントロクイズ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -136,10 +136,11 @@
             <span id="vs-progress">第 1 / 10 問</span>
             <div class="vs-timers-container">
               <div class="stopwatch-text">経過時間: <span id="vs-stopwatch-display">00:00.00</span></div>
+              <div class="next-phrase-text">次のフレーズ表示まで: <span id="vs-next-phrase-timer">15</span>秒</div>
             </div>
-            <button id="vs-quit-btn" class="quit-btn">中断</button>
+            <button id="vs-pause-btn" class="quit-btn">一時中断</button>
           </div>
-          <div id="vs-lyrics-box" class="lyrics-box"></div>
+          <div id="vs-lyrics-box" class="lyrics-box vs-lyrics"></div>
         </div>
 
         <!-- 右側: 2P -->
@@ -149,50 +150,195 @@
           <button id="vs-p2-btn" class="vs-buzz-btn p2-btn">PUSH!!</button>
         </div>
       </div>
-    </div>
 
-    <!-- 4. 管理者画面 -->
-    <div id="admin-screen" class="screen">
-      <div class="form-header">
-        <h2>楽曲データ管理</h2>
-        <button id="close-admin-btn" class="btn secondary small-btn">メニューに戻る</button>
+      <!-- VS早押し後の選択肢モーダル -->
+      <div id="vs-choice-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+          <h3 id="vs-answering-title">1P の回答</h3>
+          <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
+          <div id="vs-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+        </div>
       </div>
 
-      <form id="song-form">
-        <div class="form-group">
-          <label for="song-title">曲名</label>
-          <input type="text" id="song-title" required>
+      <!-- ポーズ（一時中断）モーダル -->
+      <div id="vs-pause-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="text-align:center;">
+          <h3>⏸️ 一時中断中</h3>
+          <div style="margin-top: 1.5rem; display:flex; flex-direction:column; gap:0.8rem;">
+            <button id="vs-resume-btn" class="btn primary">ゲームを再開</button>
+            <button id="vs-quit-game-btn" class="btn secondary">メニューに戻る</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="song-artist">ボカロP / アーティスト名</label>
-          <input type="text" id="song-artist" required>
-        </div>
-        <div class="form-group">
-          <label for="song-year">リリース年</label>
-          <input type="number" id="song-year" placeholder="例: 2012" required>
-        </div>
-        <div class="form-group">
-          <label for="song-lyrics-intro">歌詞（歌い始め）</label>
-          <textarea id="song-lyrics-intro" rows="3" placeholder="フレーズごとに改行してください"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="song-lyrics-chorus">歌詞（サビ）</label>
-          <textarea id="song-lyrics-chorus" rows="3" placeholder="フレーズごとに改行してください"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="song-lyrics-prechorus">歌詞（ラスサビ前）</label>
-          <textarea id="song-lyrics-prechorus" rows="3" placeholder="フレーズごとに改行してください"></textarea>
-        </div>
-        <div class="form-group checkbox-group">
-          <input type="checkbox" id="song-halloffame">
-          <label for="song-halloffame">殿堂入り / 伝説入り楽曲</label>
-        </div>
-        <button type="submit" class="btn primary">楽曲を追加・更新</button>
-      </form>
+      </div>
     </div>
 
+    <!-- 画面回転促しポップアップモーダル -->
+    <div id="vs-orient-modal" class="modal-overlay hidden">
+      <div class="modal-content" style="text-align:center;">
+        <h2 style="font-size:1.3rem; margin-bottom:1rem;">📱 画面を横にしてください</h2>
+        <p style="font-size:0.9rem; color:#cbd5e1; margin-bottom:1.5rem;">対戦モードは端末を横向きにして2人で遊ぶモードです。</p>
+        <button id="vs-orient-ok-btn" class="btn primary">準備OK</button>
+      </div>
+    </div>
+
+    <!-- 4. 各問題の結果画面 -->
+    <div id="answer-screen" class="screen">
+      <h2 id="result-status">⭕ 正解！</h2>
+      <div class="song-detail">
+        <h3 id="detail-title">曲名</h3>
+        <p>ボカロP: <span id="detail-producer">P名</span></p>
+        <p>投稿年: <span id="detail-year">2000年</span></p>
+        <div id="vs-answer-info" class="vs-answer-info hidden">
+          <p>早押しプレイヤー: <strong id="vs-answer-player" style="color:#38bdf8;">1P</strong></p>
+          <p>回答タイム: <strong id="vs-answer-time" style="color:#f59e0b;">1.23 秒</strong></p>
+        </div>
+      </div>
+      <button id="next-question-btn" class="btn primary">次の問題へ</button>
+    </div>
+
+    <!-- 5. 最終結果画面 -->
+    <div id="final-screen" class="screen">
+      <h2>結果発表</h2>
+      
+      <!-- 通常用 -->
+      <div id="solo-final-result" class="final-score-text">
+        <p>あなたの正解数は...</p>
+        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
+      </div>
+
+      <!-- 対戦用結果 -->
+      <div id="vs-final-result" class="final-score-text hidden">
+        <h3 id="vs-winner-text" style="font-size:1.8rem; margin-bottom:1rem;">🏆 WINNER: 1P !</h3>
+        <div class="vs-final-scores">
+          <div class="vs-score-card p1-card">
+            <span>1P</span>
+            <strong><span id="vs-final-p1-score">0</span> pt</strong>
+          </div>
+          <div class="vs-score-card p2-card">
+            <span>2P</span>
+            <strong><span id="vs-final-p2-score">0</span> pt</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- タイムアタック用 -->
+      <div id="time-attack-result" class="time-attack-result hidden">
+        <div id="new-record-badge" class="new-record-badge hidden">🎉 TOP3 ランクイン！</div>
+        <p>50問クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
+      </div>
+
+      <button id="back-to-menu-btn" class="btn primary">メニューに戻る</button>
+    </div>
+
+    <!-- 6. 管理者メニュー画面 -->
+    <div id="admin-screen" class="screen">
+      <div class="form-header">
+        <h2>管理者メニュー</h2>
+        <button id="close-admin-btn" class="btn secondary small-btn">戻る</button>
+      </div>
+
+      <div id="admin-msg" class="message hidden"></div>
+
+      <div class="admin-section">
+        <h3 id="admin-add-song-title">新規楽曲の追加</h3>
+        <form id="add-song-form">
+          <div class="form-group">
+            <label>タイトル *</label>
+            <input type="text" id="add-title" required>
+          </div>
+          <div class="form-group">
+            <label>ボカロP *</label>
+            <input type="text" id="add-producer" required>
+          </div>
+          <div class="form-group">
+            <label>投稿年 *</label>
+            <input type="number" id="add-year" value="2020" required>
+          </div>
+          <div class="form-group checkbox-group">
+            <label><input type="checkbox" id="add-halloffame"> 殿堂入り/伝説入り</label>
+          </div>
+          <div class="form-group">
+            <label>歌い始め歌詞 (1行ずつ改行)</label>
+            <textarea id="add-intro" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>サビ歌詞 (1行ずつ改行)</label>
+            <textarea id="add-chorus" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>ラスサビ前歌詞 (1行ずつ改行)</label>
+            <textarea id="add-prechorus" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn primary">楽曲をデータベースへ登録</button>
+        </form>
+      </div>
+
+      <hr class="divider">
+
+      <div class="admin-section">
+        <h3>登録済み楽曲一覧 (初期楽曲含む)</h3>
+        <p style="font-size:0.85rem; color:#94a3b8;">タップすると詳細画面で編集・削除ができます</p>
+        <div id="song-list-container" class="song-list-container"></div>
+      </div>
+    </div>
+
+    <!-- 7. 楽曲編集専用画面 -->
+    <div id="edit-song-screen" class="screen">
+      <div class="form-header">
+        <h2>楽曲情報の編集</h2>
+        <button id="cancel-edit-btn" class="btn secondary small-btn">キャンセル</button>
+      </div>
+
+      <form id="edit-song-form" class="admin-section">
+        <div class="form-group">
+          <label>タイトル *</label>
+          <input type="text" id="edit-title" required>
+        </div>
+        <div class="form-group">
+          <label>ボカロP *</label>
+          <input type="text" id="edit-producer" required>
+        </div>
+        <div class="form-group">
+          <label>投稿年 *</label>
+          <input type="number" id="edit-year" required>
+        </div>
+        <div class="form-group checkbox-group">
+          <label><input type="checkbox" id="edit-halloffame"> 殿堂入り/伝説入り</label>
+        </div>
+        <div class="form-group">
+          <label>歌い始め歌詞 (1行ずつ改行)</label>
+          <textarea id="edit-intro" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>サビ歌詞 (1行ずつ改行)</label>
+          <textarea id="edit-chorus" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>ラスサビ前歌詞 (1行ずつ改行)</label>
+          <textarea id="edit-prechorus" rows="3"></textarea>
+        </div>
+
+        <div class="btn-group" style="margin-top: 1.5rem;">
+          <button type="submit" class="btn primary">変更を保存</button>
+          <button type="button" id="open-delete-modal-btn" class="btn danger">この楽曲を削除</button>
+        </div>
+      </form>
+    </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- 8. 削除確認ポップアップ (モーダル) -->
+  <div id="delete-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3>⚠️ 楽曲の削除</h3>
+      <p>本当に「<span id="delete-target-title"></span>」を削除しますか？</p>
+      <p style="font-size:0.85rem; color:#f87171;">※この操作は取り消せません。</p>
+      <div class="modal-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button id="cancel-delete-btn" class="btn secondary">キャンセル</button>
+        <button id="confirm-delete-btn" class="btn danger">削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>
