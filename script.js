@@ -1,5 +1,4 @@
 // --- グローバル変数・データ管理 ---
-// 登録された楽曲の管理用配列（実運用時はFirebase等と同期）
 let songsData = [
   { id: 1, title: "メルト", artist: "ryo" },
   { id: 2, title: "千本桜", artist: "黒うさP" },
@@ -56,11 +55,23 @@ function renderAdminSongList(songs) {
   });
 }
 
-// --- ダミーのクイズ開始処理 ---
-function initGame() {
+// --- クイズ画面 UI初期化 & 描画処理 ---
+function setupGameUI(mode) {
+  const soloArea = document.getElementById("solo-answer-input-area");
+  const multiArea = document.getElementById("multi-answer-buzz-area");
+
+  if (mode === "multi") {
+    if (soloArea) soloArea.classList.add("hidden");
+    if (multiArea) multiArea.classList.remove("hidden");
+  } else {
+    // solo / timeattack など
+    if (soloArea) soloArea.classList.remove("hidden");
+    if (multiArea) multiArea.classList.add("hidden");
+  }
+
+  // 歌詞表示エリアの更新
   const lyricsBox = document.getElementById('lyrics-box');
   const vsLyricsBox = document.getElementById('vs-lyrics-box');
-
   const sampleLyric = '<div class="lyric-line">🎵 歌詞データ読み込み完了（テスト表示）</div>';
 
   if (lyricsBox) lyricsBox.innerHTML = sampleLyric;
@@ -75,11 +86,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (openAdminBtn) {
     openAdminBtn.addEventListener("click", () => {
       showScreen("admin-screen");
-      renderAdminSongList(songsData); // 管理者画面を開いた時にリスト描画
+      renderAdminSongList(songsData);
     });
   }
 
-  // 2. 管理者メニューを閉じる（メニューに戻る）
+  // 2. 管理者メニューを閉じる
   const closeAdminBtn = document.getElementById("close-admin-btn");
   if (closeAdminBtn) {
     closeAdminBtn.addEventListener("click", () => {
@@ -94,34 +105,28 @@ document.addEventListener("DOMContentLoaded", () => {
       const modeSelect = document.getElementById("player-mode-select");
       const selectedMode = modeSelect ? modeSelect.value : "solo";
 
-      // 選択したモードに応じて画面を切り替え
       if (selectedMode === "vs") {
         showScreen("vs-game-screen");
       } else {
         showScreen("game-screen");
       }
 
-      // クイズ画面初期化
-      initGame();
+      // 選択モードに合わせてUIを表示整理
+      setupGameUI(selectedMode);
     });
   }
 
-  // 4. ゲーム中断ボタン（通常 & VS）
-  const quitBtn = document.getElementById("quit-btn");
-  if (quitBtn) {
-    quitBtn.addEventListener("click", () => {
-      showScreen("menu-screen");
-    });
-  }
+  // 4. 中断ボタン
+  const quitBtns = [document.getElementById("quit-btn"), document.getElementById("vs-quit-btn")];
+  quitBtns.forEach(btn => {
+    if (btn) {
+      btn.addEventListener("click", () => {
+        showScreen("menu-screen");
+      });
+    }
+  });
 
-  const vsQuitBtn = document.getElementById("vs-quit-btn");
-  if (vsQuitBtn) {
-    vsQuitBtn.addEventListener("click", () => {
-      showScreen("menu-screen");
-    });
-  }
-
-  // 5. カテゴリーの「年代別」選択時に年代枠を表示
+  // 5. カテゴリー「年代別」選択時の表示切替
   const categorySelect = document.getElementById("category-select");
   const eraGroup = document.getElementById("era-group");
   if (categorySelect && eraGroup) {
@@ -134,25 +139,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 6. プレイヤーモードに応じた入力域の表示切替
+  // 6. プレイヤーモード変更時の入力域切り替え（メニュー画面内）
   const playerModeSelect = document.getElementById("player-mode-select");
-  const soloArea = document.getElementById("solo-answer-input-area");
-  const multiArea = document.getElementById("multi-answer-buzz-area");
-
   if (playerModeSelect) {
     playerModeSelect.addEventListener("change", (e) => {
+      // タイムアタックの場合の出題数固定処理などもここに追加できます
       const mode = e.target.value;
-      if (mode === "multi") {
-        if (soloArea) soloArea.classList.add("hidden");
-        if (multiArea) multiArea.classList.remove("hidden");
-      } else {
-        if (soloArea) soloArea.classList.remove("hidden");
-        if (multiArea) multiArea.classList.add("hidden");
+      const countSelect = document.getElementById("count-select");
+      if (mode === "timeattack" && countSelect) {
+        countSelect.value = "50";
       }
     });
   }
 
-  // 7. ボカロP順に並べ替えボタン
+  // 7. ボカロP順ソート
   const sortArtistBtn = document.getElementById("sort-artist-btn");
   if (sortArtistBtn) {
     sortArtistBtn.addEventListener("click", () => {
@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 8. 曲名順に並べ替えボタン
+  // 8. 曲名順ソート
   const sortTitleBtn = document.getElementById("sort-title-btn");
   if (sortTitleBtn) {
     sortTitleBtn.addEventListener("click", () => {
@@ -174,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 9. 楽曲追加フォーム送信時の処理
+  // 9. 楽曲追加フォーム送信
   const songForm = document.getElementById("song-form");
   if (songForm) {
     songForm.addEventListener("submit", (e) => {
@@ -191,9 +191,20 @@ document.addEventListener("DOMContentLoaded", () => {
         songsData.push(newSong);
         renderAdminSongList(songsData);
         
-        // フォームリセット
         songForm.reset();
         alert("楽曲を追加しました！");
+      }
+    });
+  }
+
+  // 10. 回答送信ボタン（ダミー動作）
+  const soloSubmitBtn = document.getElementById("solo-submit-btn");
+  if (soloSubmitBtn) {
+    soloSubmitBtn.addEventListener("click", () => {
+      const input = document.getElementById("solo-input");
+      if (input && input.value.trim() !== "") {
+        alert(`回答「${input.value}」を受け付けました！`);
+        input.value = "";
       }
     });
   }
