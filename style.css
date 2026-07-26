@@ -13,7 +13,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  padding: 1rem;
+  padding: 0.5rem;
 }
 
 .container {
@@ -25,6 +25,13 @@ body {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   position: relative;
   overflow: hidden;
+  transition: max-width 0.3s ease;
+}
+
+/* VSモード時の横画面拡張 */
+.container.landscape-mode {
+  max-width: 900px;
+  width: 95vw;
 }
 
 /* 画面切替ロジック */
@@ -92,11 +99,12 @@ select:disabled {
   font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.1s;
 }
 
 .btn:active {
   opacity: 0.8;
+  transform: scale(0.98);
 }
 
 .btn.primary {
@@ -236,11 +244,135 @@ select:disabled {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.choices-box {
+/* --- 2人対戦(VS)レイアウト (横画面) --- */
+.vs-layout {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  min-height: 280px;
+}
+
+.vs-side {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem;
+  border-radius: 12px;
+  background-color: #0f172a;
+  border: 2px solid #334155;
+}
+
+.vs-p1 {
+  border-color: #ef4444;
+}
+
+.vs-p2 {
+  border-color: #3b82f6;
+}
+
+.vs-player-label {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.vs-p1 .vs-player-label { color: #ef4444; }
+.vs-p2 .vs-player-label { color: #3b82f6; }
+
+.vs-score-box {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #f8fafc;
+  margin: 0.5rem 0;
+}
+
+.vs-buzz-btn {
+  width: 100%;
+  height: 120px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.4);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.vs-buzz-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.4);
+}
+
+.vs-buzz-btn.p1-btn {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.vs-buzz-btn.p2-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.vs-buzz-btn:disabled {
+  background: #475569;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.vs-center {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.vs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.vs-lyrics {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* 正解画面でのVS追加情報 */
+.vs-answer-info {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed #334155;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* VS最終勝者カード */
+.vs-final-scores {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.vs-score-card {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  background-color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.vs-score-card.p1-card { border: 2px solid #ef4444; color: #ef4444; }
+.vs-score-card.p2-card { border: 2px solid #3b82f6; color: #3b82f6; }
+
+.vs-score-card strong {
+  font-size: 1.8rem;
+  margin-top: 0.3rem;
+  color: #fff;
 }
 
 /* 管理者画面 */
@@ -286,7 +418,6 @@ select:disabled {
   background-color: #334155;
 }
 
-/* メッセージ表示 */
 .message {
   padding: 0.6rem;
   border-radius: 6px;
@@ -307,7 +438,6 @@ select:disabled {
   border: 1px solid #4ade80;
 }
 
-/* 最終結果 */
 .final-score-text {
   text-align: center;
   margin: 1.5rem 0;
