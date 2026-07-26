@@ -325,7 +325,6 @@ document.getElementById("start-btn").addEventListener("click", () => {
   gameState.taTotalTimeMs = 0;
 
   if (playerMode === "vs") {
-    // 画面回転促しダイアログ表示
     document.getElementById("vs-orient-modal").classList.remove("hidden");
   } else {
     setupUIForModes();
@@ -348,16 +347,16 @@ document.getElementById("vs-orient-ok-btn").addEventListener("click", () => {
 
 function setupUIForModes() {
   const soloInputArea = document.getElementById("solo-answer-input-area");
-  const multiChoiceArea = document.getElementById("multi-answer-choice-area");
+  const multiBuzzArea = document.getElementById("multi-answer-buzz-area");
   const timerDisplay = document.getElementById("timer-display");
   const manualWrapper = document.getElementById("manual-next-wrapper");
 
   if (gameState.mode === "multi") {
     soloInputArea.classList.add("hidden");
-    multiChoiceArea.classList.remove("hidden");
+    multiBuzzArea.classList.remove("hidden");
   } else {
     soloInputArea.classList.remove("hidden");
-    multiChoiceArea.classList.add("hidden");
+    multiBuzzArea.classList.add("hidden");
   }
 
   if (gameState.phraseMode === "auto") {
@@ -383,7 +382,7 @@ function startStopwatch() {
   }, 30);
 }
 
-// --- 通常 (1人・複数人順番) クイズ処理 ---
+// --- 通常 (1人・複数人早押し) クイズ処理 ---
 function loadQuestion() {
   if (gameState.mode !== "timeattack") {
     clearInterval(gameState.timerInterval);
@@ -395,16 +394,16 @@ function loadQuestion() {
   gameState.displayedPhraseCount = 0;
 
   let progressText = `第 ${gameState.currentIndex + 1} / ${gameState.questions.length} 問`;
-  if (gameState.mode === "multi") {
-    progressText += ` (回答順: プレイヤー${(gameState.currentIndex % 2) + 1})`;
-  }
 
   document.getElementById("question-progress").innerText = progressText;
   document.getElementById("lyrics-box").innerHTML = "";
   document.getElementById("solo-input").value = "";
 
   if (gameState.mode === "multi") {
-    setupMultiChoices();
+    const multiBtn = document.getElementById("multi-buzz-btn");
+    multiBtn.disabled = false;
+    multiBtn.innerText = "PUSH!! (早押し)";
+    document.getElementById("multi-choice-modal").classList.add("hidden");
   }
 
   addNextPhrase();
@@ -414,7 +413,20 @@ function loadQuestion() {
   }
 }
 
-function setupMultiChoices() {
+// 複数人モード：早押しボタン押下時の処理
+document.getElementById("multi-buzz-btn").addEventListener("click", () => {
+  if (gameState.phraseMode === "auto") {
+    clearInterval(gameState.timerInterval);
+  }
+
+  document.getElementById("multi-buzz-btn").disabled = true;
+  document.getElementById("multi-buzz-btn").innerText = "回答中...";
+
+  setupMultiChoicesModal();
+});
+
+function setupMultiChoicesModal() {
+  const modal = document.getElementById("multi-choice-modal");
   const container = document.getElementById("multi-choices-container");
   container.innerHTML = "";
 
@@ -422,15 +434,28 @@ function setupMultiChoices() {
   choices.forEach(optText => {
     const btn = document.createElement("button");
     btn.className = "btn secondary";
-    btn.style.padding = "0.75rem";
+    btn.style.padding = "0.85rem";
     btn.innerText = optText;
 
     btn.onclick = () => {
+      modal.classList.add("hidden");
       const isCorrect = (optText === gameState.currentSong.title);
-      finishQuestion(isCorrect);
+      
+      if (isCorrect) {
+        finishQuestion(true);
+      } else {
+        alert("不正解！ボタンが復帰します。");
+        document.getElementById("multi-buzz-btn").disabled = false;
+        document.getElementById("multi-buzz-btn").innerText = "PUSH!! (早押し)";
+        if (gameState.phraseMode === "auto") {
+          startTimer();
+        }
+      }
     };
     container.appendChild(btn);
   });
+
+  modal.classList.remove("hidden");
 }
 
 function addNextPhrase() {
@@ -571,7 +596,7 @@ function startVSTimers() {
     const elapsed = Date.now() - gameState.elapsedStartTime;
     stopwatchElem.innerText = formatTime(elapsed);
 
-    // 2. 自動進行フレーズタイマー (1秒ごと更新)
+    // 2. 自動進行フレーズタイマー
     if (gameState.phraseMode === "auto") {
       const secElapsed = Math.floor(elapsed / 1000);
       const remainingSec = 15 - (secElapsed % 15);
@@ -675,15 +700,12 @@ function handleVSAnswerResult(isCorrect) {
 
     finishVSQuestion(true);
   } else {
-    // 不正解時の処理：解答権フラグの更新
     if (gameState.answeringPlayer === 1) gameState.p1Attempted = true;
     if (gameState.answeringPlayer === 2) gameState.p2Attempted = true;
 
-    // 両者とも不正解・回答済みの場合 -> 問題終了
     if (gameState.p1Attempted && gameState.p2Attempted) {
       finishVSQuestion(false);
     } else {
-      // 相手プレイヤーに解答権移行
       alert(`不正解！ 相手プレイヤーに解答権が移ります。`);
       updateVSButtonStates();
       startVSTimers();
