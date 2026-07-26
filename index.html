@@ -136,4 +136,63 @@
             <span id="vs-progress">第 1 / 10 問</span>
             <div class="vs-timers-container">
               <div class="stopwatch-text">経過時間: <span id="vs-stopwatch-display">00:00.00</span></div>
-              <div class="next-
+            </div>
+            <button id="vs-quit-btn" class="quit-btn">中断</button>
+          </div>
+          <div id="vs-lyrics-box" class="lyrics-box"></div>
+        </div>
+
+        <!-- 右側: 2P -->
+        <div class="vs-side vs-p2">
+          <div class="vs-player-label">2P (PLAYER 2)</div>
+          <div class="vs-score-box">Pt: <span id="vs-p2-score">0</span></div>
+          <button id="vs-p2-btn" class="vs-buzz-btn p2-btn">PUSH!!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 管理者画面 -->
+    <div id="admin-screen" class="screen">
+      <div class="form-header">
+        <h2>楽曲データ管理</h2>
+        <button id="close-admin-btn" class="btn secondary small-btn">メニューに戻る</button>
+      </div>
+
+      <form id="song-form">
+        <div class="form-group">
+          <label for="song-title">曲名</label>
+          <input type="text" id="song-title" required>
+        </div>
+        <div class="form-group">
+          <label for="song-artist">ボカロP / アーティスト名</label>
+          <input type="text" id="song-artist" required>
+        </div>
+        <div class="form-group">
+          <label for="song-year">リリース年</label>
+          <input type="number" id="song-year" placeholder="例: 2012" required>
+        </div>
+        <div class="form-group">
+          <label for="song-lyrics-intro">歌詞（歌い始め）</label>
+          <textarea id="song-lyrics-intro" rows="3" placeholder="フレーズごとに改行してください"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="song-lyrics-chorus">歌詞（サビ）</label>
+          <textarea id="song-lyrics-chorus" rows="3" placeholder="フレーズごとに改行してください"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="song-lyrics-prechorus">歌詞（ラスサビ前）</label>
+          <textarea id="song-lyrics-prechorus" rows="3" placeholder="フレーズごとに改行してください"></textarea>
+        </div>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="song-halloffame">
+          <label for="song-halloffame">殿堂入り / 伝説入り楽曲</label>
+        </div>
+        <button type="submit" class="btn primary">楽曲を追加・更新</button>
+      </form>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
