@@ -128,6 +128,26 @@ select:disabled {
   font-size: 0.85rem;
 }
 
+/* 複数人モード用巨大早押しボタン */
+.multi-buzz-large-btn {
+  padding: 1.5rem !important;
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+  box-shadow: 0 6px 0 #0284c7;
+}
+
+.multi-buzz-large-btn:active {
+  box-shadow: 0 2px 0 #0284c7;
+  transform: translateY(4px);
+}
+
+.multi-buzz-large-btn:disabled {
+  background-color: #475569 !important;
+  box-shadow: none !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-group {
   display: flex;
   gap: 0.5rem;
@@ -264,13 +284,8 @@ select:disabled {
   border: 2px solid #334155;
 }
 
-.vs-p1 {
-  border-color: #ef4444;
-}
-
-.vs-p2 {
-  border-color: #3b82f6;
-}
+.vs-p1 { border-color: #ef4444; }
+.vs-p2 { border-color: #3b82f6; }
 
 .vs-player-label {
   font-size: 1.1rem;
@@ -305,13 +320,8 @@ select:disabled {
   box-shadow: 0 2px 0 rgba(0,0,0,0.4);
 }
 
-.vs-buzz-btn.p1-btn {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-}
-
-.vs-buzz-btn.p2-btn {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-}
+.vs-buzz-btn.p1-btn { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.vs-buzz-btn.p2-btn { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 
 .vs-buzz-btn:disabled {
   background: #475569 !important;
