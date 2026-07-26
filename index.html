@@ -54,6 +54,7 @@
         <label for="player-mode-select">プレイモード</label>
         <select id="player-mode-select">
           <option value="solo">1人プレイ (通常)</option>
+          <option value="multi">複数人プレイ (順番回答)</option>
           <option value="vs">⚔️ 2人対戦モード (横画面早押し)</option>
           <option value="timeattack">⏱️ タイムアタック (1人・50問固定)</option>
         </select>
@@ -63,7 +64,7 @@
         <label for="count-select">出題数</label>
         <select id="count-select">
           <option value="5">5問</option>
-          <option value="10" selected>10問</option>
+          <option value="10">10問</option>
           <option value="20">20問</option>
           <option value="50">50問</option>
         </select>
@@ -81,7 +82,7 @@
       </div>
     </div>
 
-    <!-- 2. 通常(1人) クイズ画面 -->
+    <!-- 2. 通常(1人 / 複数人順番) クイズ画面 -->
     <div id="game-screen" class="screen">
       <div class="game-header">
         <span id="question-progress">第 1 / 10 問</span>
