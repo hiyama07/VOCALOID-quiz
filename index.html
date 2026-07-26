@@ -53,8 +53,8 @@
       <div class="setting-group">
         <label for="player-mode-select">プレイモード</label>
         <select id="player-mode-select">
-          <option value="solo">1人プレイ (通常)</option>
-          <option value="multi">複数人プレイ (順番回答)</option>
+          <option value="solo">1人プレイ (入力式)</option>
+          <option value="multi">複数人プレイ (順番3択)</option>
           <option value="vs">⚔️ 2人対戦モード (横画面早押し)</option>
           <option value="timeattack">⏱️ タイムアタック (1人・50問固定)</option>
         </select>
@@ -96,12 +96,19 @@
         <button id="next-phrase-btn" class="btn secondary">次のフレーズを表示</button>
       </div>
 
-      <div id="solo-answer-area" class="setting-group">
+      <!-- 1人用（文字入力） -->
+      <div id="solo-answer-input-area" class="setting-group">
         <input type="text" id="solo-input" placeholder="曲名を入力してください" autocomplete="off">
         <div class="btn-group">
           <button id="solo-submit-btn" class="btn primary">回答する</button>
           <button id="pass-btn" class="btn secondary">パス</button>
         </div>
+      </div>
+
+      <!-- 複数人用（3択選択肢） -->
+      <div id="multi-answer-choice-area" class="setting-group hidden">
+        <p style="text-align:center; font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem;">正解を選んでください</p>
+        <div id="multi-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
       </div>
     </div>
 
@@ -115,12 +122,15 @@
           <button id="vs-p1-btn" class="vs-buzz-btn p1-btn">PUSH!!</button>
         </div>
 
-        <!-- 中央: 歌詞・タイマー・問題数 -->
+        <!-- 中央: 歌詞・各種タイマー -->
         <div class="vs-center">
           <div class="vs-header">
             <span id="vs-progress">第 1 / 10 問</span>
-            <div id="vs-timer-display" class="timer">15</div>
-            <button id="vs-quit-btn" class="quit-btn">中断</button>
+            <div class="vs-timers-container">
+              <div class="stopwatch-text">経過時間: <span id="vs-stopwatch-display">00:00.00</span></div>
+              <div class="next-phrase-text">次のフレーズ表示まで: <span id="vs-next-phrase-timer">15</span>秒</div>
+            </div>
+            <button id="vs-pause-btn" class="quit-btn">一時中断</button>
           </div>
           <div id="vs-lyrics-box" class="lyrics-box vs-lyrics"></div>
         </div>
@@ -140,6 +150,26 @@
           <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
           <div id="vs-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
         </div>
+      </div>
+
+      <!-- ポーズ（一時中断）モーダル -->
+      <div id="vs-pause-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="text-align:center;">
+          <h3>⏸️ 一時中断中</h3>
+          <div style="margin-top: 1.5rem; display:flex; flex-direction:column; gap:0.8rem;">
+            <button id="vs-resume-btn" class="btn primary">ゲームを再開</button>
+            <button id="vs-quit-game-btn" class="btn secondary">メニューに戻る</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 画面回転促しポップアップモーダル -->
+    <div id="vs-orient-modal" class="modal-overlay hidden">
+      <div class="modal-content" style="text-align:center;">
+        <h2 style="font-size:1.3rem; margin-bottom:1rem;">📱 画面を横にしてください</h2>
+        <p style="font-size:0.9rem; color:#cbd5e1; margin-bottom:1.5rem;">対戦モードは端末を横向きにして2人で遊ぶモードです。</p>
+        <button id="vs-orient-ok-btn" class="btn primary">準備OK</button>
       </div>
     </div>
 
