@@ -33,7 +33,6 @@
         </select>
       </div>
 
-      <!-- 出題パート選択 -->
       <div class="setting-group">
         <label for="part-select">出題パート</label>
         <select id="part-select">
@@ -51,17 +50,15 @@
         </select>
       </div>
 
-      <!-- プレイモード -->
       <div class="setting-group">
         <label for="player-mode-select">プレイモード</label>
         <select id="player-mode-select">
           <option value="solo">1人プレイ (通常)</option>
+          <option value="vs">⚔️ 2人対戦モード (横画面早押し)</option>
           <option value="timeattack">⏱️ タイムアタック (1人・50問固定)</option>
-          <option value="multi">複数人用(早押し3択)</option>
         </select>
       </div>
 
-      <!-- 出題数 -->
       <div class="setting-group">
         <label for="count-select">出題数</label>
         <select id="count-select">
@@ -72,12 +69,9 @@
         </select>
       </div>
 
-      <!-- タイムアタック用 ランキング表示エリア -->
       <div id="ranking-box" class="ranking-box hidden">
         <h3>🏆 50問完走 TOP3 クリアタイム</h3>
-        <ul id="ranking-list" class="ranking-list">
-          <!-- JSで動的生成 -->
-        </ul>
+        <ul id="ranking-list" class="ranking-list"></ul>
       </div>
 
       <button id="start-btn" class="btn primary">ゲームスタート！</button>
@@ -87,11 +81,11 @@
       </div>
     </div>
 
-    <!-- 2. クイズプレイ画面 -->
+    <!-- 2. 通常(1人) クイズ画面 -->
     <div id="game-screen" class="screen">
       <div class="game-header">
-        <span id="question-progress">第 1 / 50 問</span>
-        <div id="timer-display" class="timer">00:00.00</div>
+        <span id="question-progress">第 1 / 10 問</span>
+        <div id="timer-display" class="timer">15</div>
         <button id="quit-btn" class="quit-btn">中断</button>
       </div>
 
@@ -108,44 +102,96 @@
           <button id="pass-btn" class="btn secondary">パス</button>
         </div>
       </div>
+    </div>
 
-      <div id="multi-answer-area" class="setting-group hidden">
-        <button id="buzzer-btn" class="btn primary">わかった！ (早押し)</button>
-        <div id="choices-box" class="choices-box hidden">
-          <button class="btn choice-btn secondary"></button>
-          <button class="btn choice-btn secondary"></button>
-          <button class="btn choice-btn secondary"></button>
+    <!-- 3. 横画面 2人対戦クイズ画面 (VS) -->
+    <div id="vs-game-screen" class="screen">
+      <div class="vs-layout">
+        <!-- 左側: 1P -->
+        <div class="vs-side vs-p1">
+          <div class="vs-player-label">1P (PLAYER 1)</div>
+          <div class="vs-score-box">Pt: <span id="vs-p1-score">0</span></div>
+          <button id="vs-p1-btn" class="vs-buzz-btn p1-btn">PUSH!!</button>
+        </div>
+
+        <!-- 中央: 歌詞・タイマー・問題数 -->
+        <div class="vs-center">
+          <div class="vs-header">
+            <span id="vs-progress">第 1 / 10 問</span>
+            <div id="vs-timer-display" class="timer">15</div>
+            <button id="vs-quit-btn" class="quit-btn">中断</button>
+          </div>
+          <div id="vs-lyrics-box" class="lyrics-box vs-lyrics"></div>
+        </div>
+
+        <!-- 右側: 2P -->
+        <div class="vs-side vs-p2">
+          <div class="vs-player-label">2P (PLAYER 2)</div>
+          <div class="vs-score-box">Pt: <span id="vs-p2-score">0</span></div>
+          <button id="vs-p2-btn" class="vs-buzz-btn p2-btn">PUSH!!</button>
+        </div>
+      </div>
+
+      <!-- 早押し後の選択肢モーダル -->
+      <div id="vs-choice-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+          <h3 id="vs-answering-title">1P の回答</h3>
+          <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
+          <div id="vs-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
         </div>
       </div>
     </div>
 
-    <!-- 3. 問題結果画面 -->
+    <!-- 4. 各問題の結果画面 -->
     <div id="answer-screen" class="screen">
       <h2 id="result-status">⭕ 正解！</h2>
       <div class="song-detail">
         <h3 id="detail-title">曲名</h3>
         <p>ボカロP: <span id="detail-producer">P名</span></p>
         <p>投稿年: <span id="detail-year">2000年</span></p>
+        <div id="vs-answer-info" class="vs-answer-info hidden">
+          <p>早押しプレイヤー: <strong id="vs-answer-player" style="color:#38bdf8;">1P</strong></p>
+          <p>回答タイム: <strong id="vs-answer-time" style="color:#f59e0b;">1.23 秒</strong></p>
+        </div>
       </div>
       <button id="next-question-btn" class="btn primary">次の問題へ</button>
     </div>
 
-    <!-- 4. 最終スコア画面 -->
+    <!-- 5. 最終結果画面 -->
     <div id="final-screen" class="screen">
       <h2>結果発表</h2>
-      <div class="final-score-text">
+      
+      <!-- 通常用 -->
+      <div id="solo-final-result" class="final-score-text">
         <p>あなたの正解数は...</p>
-        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">50</span></div>
-        
-        <div id="time-attack-result" class="time-attack-result hidden">
-          <div id="new-record-badge" class="new-record-badge hidden">🎉 TOP3 ランクイン！</div>
-          <p>50問クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
+        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
+      </div>
+
+      <!-- 対戦用結果 -->
+      <div id="vs-final-result" class="final-score-text hidden">
+        <h3 id="vs-winner-text" style="font-size:1.8rem; margin-bottom:1rem;">🏆 WINNER: 1P !</h3>
+        <div class="vs-final-scores">
+          <div class="vs-score-card p1-card">
+            <span>1P</span>
+            <strong><span id="vs-final-p1-score">0</span> pt</strong>
+          </div>
+          <div class="vs-score-card p2-card">
+            <span>2P</span>
+            <strong><span id="vs-final-p2-score">0</span> pt</strong>
+          </div>
         </div>
       </div>
+
+      <!-- タイムアタック用 -->
+      <div id="time-attack-result" class="time-attack-result hidden">
+        <div id="new-record-badge" class="new-record-badge hidden">🎉 TOP3 ランクイン！</div>
+        <p>50問クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
+      </div>
+
       <button id="back-to-menu-btn" class="btn primary">メニューに戻る</button>
     </div>
 
-    <!-- 5. 管理者メニュー画面 -->
+    <!-- 6. 管理者メニュー画面 -->
     <div id="admin-screen" class="screen">
       <div class="form-header">
         <h2>管理者メニュー</h2>
@@ -197,7 +243,7 @@
       </div>
     </div>
 
-    <!-- 6. 楽曲編集専用画面 -->
+    <!-- 7. 楽曲編集専用画面 -->
     <div id="edit-song-screen" class="screen">
       <div class="form-header">
         <h2>楽曲情報の編集</h2>
@@ -241,7 +287,7 @@
     </div>
   </div>
 
-  <!-- 7. 削除確認ポップアップ (モーダル) -->
+  <!-- 8. 削除確認ポップアップ (モーダル) -->
   <div id="delete-modal" class="modal-overlay hidden">
     <div class="modal-content">
       <h3>⚠️ 楽曲の削除</h3>
