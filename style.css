@@ -30,7 +30,7 @@ body {
 
 /* VSモード時の横画面拡張 */
 .container.landscape-mode {
-  max-width: 900px;
+  max-width: 900px !important;
   width: 95vw;
 }
 
