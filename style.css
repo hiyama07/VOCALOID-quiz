@@ -30,17 +30,21 @@ body {
 
 /* VSモード時の横画面拡張 */
 .container.landscape-mode {
-  max-width: 900px !important;
+  max-width: 900px;
   width: 95vw;
 }
 
 /* 画面切替ロジック */
 .screen {
-  display: none !important;
+  display: none;
 }
 
 .screen.active {
-  display: block !important;
+  display: block;
+}
+
+.hidden {
+  display: none !important;
 }
 
 h1, h2, h3 {
@@ -208,16 +212,6 @@ select:disabled {
   border-radius: 4px;
 }
 
-.ranking-rank {
-  font-weight: bold;
-  color: #38bdf8;
-}
-
-.ranking-time {
-  font-family: monospace;
-  color: #4ade80;
-}
-
 /* クイズプレイ画面 */
 .game-header {
   display: flex;
@@ -287,6 +281,19 @@ select:disabled {
 .vs-p1 { border-color: #ef4444; }
 .vs-p2 { border-color: #3b82f6; }
 
+.vs-center {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.vs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
 .vs-player-label {
   font-size: 1.1rem;
   font-weight: bold;
@@ -304,215 +311,30 @@ select:disabled {
 
 .vs-buzz-btn {
   width: 100%;
-  height: 120px;
+  padding: 1rem;
   border: none;
-  border-radius: 12px;
-  font-size: 1.5rem;
-  font-weight: 900;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: bold;
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 6px 0 rgba(0,0,0,0.4);
-  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.vs-buzz-btn:active {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 rgba(0,0,0,0.4);
-}
-
-.vs-buzz-btn.p1-btn { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.vs-buzz-btn.p2-btn { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-
-.vs-buzz-btn:disabled {
-  background: #475569 !important;
-  box-shadow: none !important;
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
-.vs-center {
-  flex: 2;
-  display: flex;
-  flex-direction: column;
-}
-
-.vs-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.vs-timers-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stopwatch-text {
-  font-family: monospace;
-  font-size: 0.95rem;
-  font-weight: bold;
-  color: #f59e0b;
-}
-
-.next-phrase-text {
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
-
-.next-phrase-text span {
-  color: #38bdf8;
-  font-weight: bold;
-}
-
-.vs-lyrics {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-/* 正解画面でのVS追加情報 */
-.vs-answer-info {
-  margin-top: 1rem;
-  padding-top: 0.8rem;
-  border-top: 1px dashed #334155;
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-/* VS最終勝者カード */
-.vs-final-scores {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
-.vs-score-card {
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  background-color: #0f172a;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 100px;
-}
-
-.vs-score-card.p1-card { border: 2px solid #ef4444; color: #ef4444; }
-.vs-score-card.p2-card { border: 2px solid #3b82f6; color: #3b82f6; }
-
-.vs-score-card strong {
-  font-size: 1.8rem;
-  margin-top: 0.3rem;
-  color: #fff;
-}
-
-/* 管理者画面 */
-.admin-section {
-  background-color: #0f172a;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.admin-section h3 {
-  text-align: left;
-  font-size: 1rem;
-  margin-bottom: 0.8rem;
-  color: #e2e8f0;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid #334155;
-  margin: 1.5rem 0;
-}
-
-.song-list-container {
-  max-height: 200px;
-  overflow-y: auto;
-  margin-top: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.song-item {
-  padding: 0.6rem;
-  background-color: #1e293b;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  border: 1px solid #334155;
-  transition: background-color 0.2s;
-}
-
-.song-item:hover {
-  background-color: #334155;
-}
-
-.message {
-  padding: 0.6rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.message.error {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border: 1px solid #ef4444;
-}
-
-.message.success {
-  background-color: rgba(74, 222, 128, 0.2);
-  color: #4ade80;
-  border: 1px solid #4ade80;
-}
-
-.final-score-text {
-  text-align: center;
-  margin: 1.5rem 0;
-}
-
-.highlight-score {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: #38bdf8;
-}
-
-.time-attack-result {
-  margin-top: 1rem;
-  padding: 0.8rem;
-  background-color: #0f172a;
-  border-radius: 8px;
-  border: 1px solid #334155;
-}
-
-.new-record-badge {
-  display: inline-block;
-  background-color: #f59e0b;
-  color: #0f172a;
-  font-weight: bold;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  margin-bottom: 0.5rem;
-}
+.vs-buzz-btn.p1-btn { background-color: #ef4444; }
+.vs-buzz-btn.p2-btn { background-color: #3b82f6; }
 
 /* モーダル */
 .modal-overlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 100;
 }
 
 .modal-content {
@@ -520,10 +342,5 @@ select:disabled {
   padding: 1.5rem;
   border-radius: 12px;
   width: 90%;
-  max-width: 400px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-}
-
-.hidden {
-  display: none !important;
+  max-width: 360px;
 }
