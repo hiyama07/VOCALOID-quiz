@@ -7,153 +7,133 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container" id="app-container">
-    
-    <!-- カウントダウンオーバーレイ -->
-    <div id="countdown-overlay" class="modal-overlay hidden">
-      <div id="countdown-text" style="font-size: 5rem; font-weight: 900; color: #38bdf8; text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);">3</div>
-    </div>
 
-    <!-- メニュー画面 -->
+  <div class="container">
+    <!-- 1. メニュー画面 -->
     <div id="menu-screen" class="screen active">
       <h1>ボカロ歌詞クイズ</h1>
       
       <div class="setting-group">
-        <label for="mode-select">ゲームモード</label>
-        <select id="mode-select">
-          <option value="normal">1人モード (通常)</option>
-          <option value="timeattack">1人モード (タイムアタック)</option>
-          <option value="vs">2人対戦 (VSモード)</option>
+        <label for="category-select">カテゴリー</label>
+        <select id="category-select">
+          <option value="all">全曲</option>
+          <option value="halloffame">殿堂入り / 伝説入り</option>
+          <option value="era">年代別</option>
+        </select>
+      </div>
+
+      <div id="era-group" class="setting-group hidden">
+        <label for="era-select">年代選択</label>
+        <select id="era-select">
+          <option value="~2011">~ 2011年 (初期)</option>
+          <option value="2012~2015">2012 ~ 2015年</option>
+          <option value="2016~2018">2016 ~ 2018年</option>
+          <option value="2019~2021">2019 ~ 2021年</option>
+          <option value="2022~">2022年 ~</option>
         </select>
       </div>
 
       <div class="setting-group">
-        <label for="category-select">カテゴリー</label>
-        <select id="category-select">
-          <option value="all">全楽曲</option>
-          <option value="era">年代別</option>
-          <option value="halloffame">伝説入り/神話入り</option>
+        <label for="part-select">出題パート</label>
+        <select id="part-select">
+          <option value="intro">歌い始め</option>
+          <option value="chorus">サビ</option>
+          <option value="prechorus">ラスサビ前</option>
         </select>
       </div>
 
-      <!-- 年代プルダウン（初期状態は非表示） -->
-      <div class="setting-group hidden" id="era-group">
-        <label for="era-select">年代</label>
-        <select id="era-select">
-          <option value="all">指定なし</option>
-          <option value="2007-2011">2007年〜2011年</option>
-          <option value="2012-2016">2012年〜2016年</option>
-          <option value="2017-2021">2017年〜2021年</option>
-          <option value="2022~">2022年〜現在</option>
+      <div id="phrase-mode-group" class="setting-group">
+        <label for="phrase-mode-select">フレーズ進行</label>
+        <select id="phrase-mode-select">
+          <option value="auto">自動 (15秒ごとに進行)</option>
+          <option value="manual">手動 (ボタンで進める)</option>
         </select>
       </div>
 
-      <div class="setting-group" id="question-count-group">
-        <label for="question-count-select">問題数</label>
-        <select id="question-count-select">
+      <div class="setting-group">
+        <label for="player-mode-select">プレイモード</label>
+        <select id="player-mode-select">
+          <option value="solo">1人プレイ (入力式)</option>
+          <option value="multi">複数人モード (早押し3択)</option>
+          <option value="vs">⚔️ 2人対戦モード (横画面早押し)</option>
+          <option value="timeattack">⏱️ タイムアタック (1人・50問固定)</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label for="count-select">出題数</label>
+        <select id="count-select">
           <option value="5">5問</option>
-          <option value="10" selected>10問</option>
+          <option value="10">10問</option>
           <option value="20">20問</option>
           <option value="50">50問</option>
         </select>
       </div>
 
-      <!-- ランキング表示（タイムアタック時のみ表示） -->
-      <div class="ranking-box hidden" id="ranking-box">
-        <h3>🏆 タイムアタック ランキング</h3>
-        <ul class="ranking-list" id="ranking-list">
-          <li class="ranking-item"><span>データ読み込み中...</span></li>
-        </ul>
+      <div id="ranking-box" class="ranking-box hidden">
+        <h3>🏆 50問完走 TOP3 クリアタイム</h3>
+        <ul id="ranking-list" class="ranking-list"></ul>
       </div>
 
-      <button id="start-btn" class="btn primary">ゲームスタート</button>
-      <button id="admin-menu-btn" class="subtle-link-btn">楽曲管理画面へ</button>
+      <button id="start-btn" class="btn primary">ゲームスタート！</button>
+
+      <div class="admin-link-wrapper">
+        <button id="open-admin-btn" class="subtle-link-btn">管理者メニュー</button>
+      </div>
     </div>
 
-    <!-- 1人プレイ画面 (通常/タイムアタック) -->
-    <div id="solo-game-screen" class="screen">
+    <!-- 2. 通常(1人 / 複数人早押し) クイズ画面 -->
+    <div id="game-screen" class="screen">
       <div class="game-header">
-        <span id="solo-progress">Q. 1 / 10</span>
-        <span id="solo-timer" class="timer">00:00.00</span>
-        <button id="solo-quit-btn" class="quit-btn">中断</button>
+        <span id="question-progress">第 1 / 10 問</span>
+        <div id="timer-display" class="timer">15</div>
+        <button id="quit-btn" class="quit-btn">中断</button>
       </div>
 
-      <div class="lyrics-box" id="solo-lyrics-box">
-        <!-- 歌詞テキストがここに入ります -->
+      <div id="lyrics-box" class="lyrics-box"></div>
+
+      <div id="manual-next-wrapper" class="hidden">
+        <button id="next-phrase-btn" class="btn secondary">次のフレーズを表示</button>
       </div>
 
-      <!-- 1人モード用入力フォーム -->
-      <div id="solo-answer-form" class="form-group" style="margin-top: 1rem;">
-        <input type="text" id="solo-answer-input" placeholder="曲名を入力してください" autocomplete="off">
-        <button id="solo-submit-btn" class="btn primary" style="margin-top: 0.5rem;">回答する</button>
+      <!-- 1人用（文字入力） -->
+      <div id="solo-answer-input-area" class="setting-group">
+        <input type="text" id="solo-input" placeholder="曲名を入力してください" autocomplete="off">
+        <div class="btn-group">
+          <button id="solo-submit-btn" class="btn primary">回答する</button>
+          <button id="pass-btn" class="btn secondary">パス</button>
+        </div>
+      </div>
+
+      <!-- 複数人用（早押しボタン） -->
+      <div id="multi-answer-buzz-area" class="setting-group hidden">
+        <button id="multi-buzz-btn" class="btn primary multi-buzz-large-btn">PUSH!! (早押し)</button>
       </div>
     </div>
 
-    <!-- 2人対戦(VS)画面 -->
+    <!-- 複数人モード用の3択モーダル -->
+    <div id="multi-choice-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3 style="margin-bottom:0.8rem;">回答を選択</h3>
+        <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
+        <div id="multi-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+      </div>
+    </div>
+
+    <!-- 3. 横画面 2人対戦クイズ画面 (VS) -->
     <div id="vs-game-screen" class="screen">
       <div class="vs-layout">
-        <!-- P1 エリア -->
+        <!-- 左側: 1P -->
         <div class="vs-side vs-p1">
-          <div class="vs-player-label">PLAYER 1</div>
-          <div class="vs-score-box">Score: <span id="p1-score">0</span></div>
-          <button id="p1-buzz-btn" class="vs-buzz-btn p1-btn">早押し</button>
+          <div class="vs-player-label">1P (PLAYER 1)</div>
+          <div class="vs-score-box">Pt: <span id="vs-p1-score">0</span></div>
+          <button id="vs-p1-btn" class="vs-buzz-btn p1-btn">PUSH!!</button>
         </div>
 
-        <!-- 中央 エリア -->
+        <!-- 中央: 歌詞・各種タイマー -->
         <div class="vs-center">
           <div class="vs-header">
-            <span id="vs-progress">Q. 1 / 10</span>
+            <span id="vs-progress">第 1 / 10 問</span>
             <div class="vs-timers-container">
-              <div class="stopwatch-text">TIME: <span id="vs-timer">00:00.00</span></div>
-            </div>
-            <button id="vs-quit-btn" class="quit-btn">中断</button>
-          </div>
-          <div class="lyrics-box vs-lyrics" id="vs-lyrics-box">
-            <!-- 歌詞が入ります -->
-          </div>
-        </div>
-
-        <!-- P2 エリア -->
-        <div class="vs-side vs-p2">
-          <div class="vs-player-label">PLAYER 2</div>
-          <div class="vs-score-box">Score: <span id="p2-score">0</span></div>
-          <button id="p2-buzz-btn" class="vs-buzz-btn p2-btn">早押し</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 回答入力モーダル (VSモード等の早押し用) -->
-    <div id="modal-answer" class="modal-overlay hidden">
-      <div class="modal-content">
-        <h3 id="modal-player-title">PLAYER 1 の回答</h3>
-        <div class="form-group" style="margin-top: 1rem;">
-          <input type="text" id="modal-answer-input" placeholder="曲名を入力..." autocomplete="off">
-        </div>
-        <div class="btn-group">
-          <button id="modal-submit-btn" class="btn primary">送信</button>
-          <button id="modal-cancel-btn" class="btn secondary">パス/キャンセル</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 結果発表画面 -->
-    <div id="result-screen" class="screen">
-      <h2>RESULT</h2>
-      <div id="result-detail"></div>
-      <button id="back-to-menu-btn" class="btn primary" style="margin-top: 1.5rem;">メニューに戻る</button>
-    </div>
-
-    <!-- 管理者画面 -->
-    <div id="admin-screen" class="screen">
-      <div class="form-header">
-        <h2>楽曲管理</h2>
-        <button id="admin-back-btn" class="btn secondary small-btn">戻る</button>
-      </div>
-      <button id="add-song-btn" class="btn primary" style="margin-bottom: 1rem;">+ 新規楽曲追加</button>
-      <div class="song-list-container" id="admin-song-list"></div>
-    </div>
-
-  </div>
-  <script type="module" src="script.js"></script>
-</body>
-</html>
+              <div class="stopwatch-text">経過時間: <span id="vs-stopwatch-display">00:00.00</span></div>
+              <div class="next-
