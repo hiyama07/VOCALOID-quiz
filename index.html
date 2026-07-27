@@ -123,14 +123,12 @@
     <!-- 3. 横画面 2人対戦クイズ画面 (VS) -->
     <div id="vs-game-screen" class="screen">
       <div class="vs-layout">
-        <!-- 左側: 1P -->
         <div class="vs-side vs-p1">
           <div class="vs-player-label">1P (PLAYER 1)</div>
           <div class="vs-score-box">Pt: <span id="vs-p1-score">0</span></div>
           <button id="vs-p1-btn" class="vs-buzz-btn p1-btn">PUSH!!</button>
         </div>
 
-        <!-- 中央: 歌詞・各種タイマー -->
         <div class="vs-center">
           <div class="vs-header">
             <span id="vs-progress">第 1 / 10 問</span>
@@ -143,7 +141,6 @@
           <div id="vs-lyrics-box" class="lyrics-box vs-lyrics"></div>
         </div>
 
-        <!-- 右側: 2P -->
         <div class="vs-side vs-p2">
           <div class="vs-player-label">2P (PLAYER 2)</div>
           <div class="vs-score-box">Pt: <span id="vs-p2-score">0</span></div>
@@ -151,7 +148,6 @@
         </div>
       </div>
 
-      <!-- VS早押し後の選択肢モーダル -->
       <div id="vs-choice-overlay" class="modal-overlay hidden">
         <div class="modal-content">
           <h3 id="vs-answering-title">1P の回答</h3>
@@ -160,7 +156,6 @@
         </div>
       </div>
 
-      <!-- ポーズ（一時中断）モーダル -->
       <div id="vs-pause-modal" class="modal-overlay hidden">
         <div class="modal-content" style="text-align:center;">
           <h3>⏸️ 一時中断中</h3>
@@ -200,13 +195,11 @@
     <div id="final-screen" class="screen">
       <h2>結果発表</h2>
       
-      <!-- 通常用 -->
       <div id="solo-final-result" class="final-score-text">
         <p>あなたの正解数は...</p>
         <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
       </div>
 
-      <!-- 対戦用結果 -->
       <div id="vs-final-result" class="final-score-text hidden">
         <h3 id="vs-winner-text" style="font-size:1.8rem; margin-bottom:1rem;">🏆 WINNER: 1P !</h3>
         <div class="vs-final-scores">
@@ -221,7 +214,6 @@
         </div>
       </div>
 
-      <!-- タイムアタック用 -->
       <div id="time-attack-result" class="time-attack-result hidden">
         <div id="new-record-badge" class="new-record-badge hidden">🎉 TOP3 ランクイン！</div>
         <p>50問クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
@@ -290,6 +282,10 @@
 
         <div id="song-list-container" class="song-list-container"></div>
       </div>
+
+      <div style="text-align: center; margin-top: 1.5rem;">
+        <span id="secret-trigger-text" style="font-size: 0.7rem; color: #475569; cursor: pointer; user-select: none;">Are you ready？</span>
+      </div>
     </div>
 
     <!-- 7. 楽曲編集専用画面 -->
@@ -334,6 +330,206 @@
         </div>
       </form>
     </div>
+
+    <!-- ================= 隠し：カゲロウプロジェクトクイズ関連画面 ================= -->
+
+    <!-- 秘匿パスワード入力画面 -->
+    <div id="kagepro-auth-screen" class="screen">
+      <div class="kagepro-auth-box">
+        <p style="font-family: monospace; color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.5rem;">pass</p>
+        <div class="kagepro-search-bar">
+          <input type="password" id="kagepro-pass-input" placeholder="パスワードを入力" autocomplete="off">
+          <button id="kagepro-go-btn" class="btn primary" style="width: auto; padding: 0.75rem 1.2rem;">GO</button>
+        </div>
+        <p id="kagepro-auth-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem;" class="hidden">パスワードが違います</p>
+        <button id="kagepro-auth-back" class="subtle-link-btn" style="margin-top: 2rem;">戻る</button>
+      </div>
+    </div>
+
+    <!-- カゲロウプロジェクトクイズ ホーム画面 -->
+    <div id="kagepro-menu-screen" class="screen kagepro-theme">
+      <!-- 赤の装飾（六角形・三角形） -->
+      <svg class="kagepro-shape shape-hexagon pos1" viewBox="0 0 100 100"><polygon points="50 3, 93 25, 93 75, 50 97, 7 75, 7 25" /></svg>
+      <svg class="kagepro-shape shape-triangle pos2" viewBox="0 0 100 100"><polygon points="50 15, 90 85, 10 85" /></svg>
+      <svg class="kagepro-shape shape-hexagon pos3" viewBox="0 0 100 100"><polygon points="50 3, 93 25, 93 75, 50 97, 7 75, 7 25" /></svg>
+      <svg class="kagepro-shape shape-triangle pos4" viewBox="0 0 100 100"><polygon points="50 15, 90 85, 10 85" /></svg>
+
+      <div class="kagepro-menu-content">
+        <h1 class="kagepro-title">カゲロウプロジェクトクイズ</h1>
+        
+        <div style="margin: 2rem 0;">
+          <button id="kagepro-start-btn" class="btn kagepro-btn-primary">クイズスタート</button>
+        </div>
+
+        <div style="margin-top: 3rem; text-align: center;">
+          <button id="kagepro-open-admin-btn" class="subtle-link-btn kagepro-subtle-btn">管理者メニュー</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- カゲプロ 管理者パスワード入力モーダル -->
+    <div id="kagepro-admin-auth-modal" class="modal-overlay hidden">
+      <div class="modal-content" style="background:#0f172a; border: 2px solid #ef4444;">
+        <h3 style="color:#ef4444; margin-bottom:1rem;">🔒 管理者認証</h3>
+        <p style="font-size:0.85rem; color:#cbd5e1; margin-bottom:1rem;">パスワードを入力してください</p>
+        <input type="password" id="kagepro-admin-pass-input" placeholder="パスワード" style="margin-bottom:1rem;">
+        <p id="kagepro-admin-auth-error" style="color:#ef4444; font-size:0.8rem; margin-bottom:1rem;" class="hidden">パスワードが正しくありません</p>
+        <div class="btn-group">
+          <button id="kagepro-admin-auth-submit" class="btn primary">認証</button>
+          <button id="kagepro-admin-auth-cancel" class="btn secondary">キャンセル</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- カゲロウプロジェクトクイズ プレイ画面 -->
+    <div id="kagepro-game-screen" class="screen kagepro-theme">
+      <div class="game-header">
+        <span id="kagepro-progress" style="color: #000; font-weight: bold;">第 1 / 5 問</span>
+        <button id="kagepro-quit-btn" class="quit-btn" style="border-color: #000; color: #000; font-weight: bold;">中断</button>
+      </div>
+
+      <div id="kagepro-lyrics-box" class="lyrics-box" style="background-color: rgba(255,255,255,0.85); border: 2px solid #000; color: #000;"></div>
+
+      <div class="setting-group" style="background: rgba(255,255,255,0.7); padding: 0.8rem; border-radius: 8px; border: 1px solid #000;">
+        <span style="font-size: 0.85rem; color: #b91c1c; font-weight: bold; margin-bottom: 0.3rem; display:block;">💡 ヒント:</span>
+        <div id="kagepro-hint-display" style="font-size: 0.95rem; color: #000; font-weight: bold;"></div>
+      </div>
+
+      <!-- 入力式エリア -->
+      <div id="kagepro-text-input-area" class="setting-group">
+        <input type="text" id="kagepro-solo-input" placeholder="答えを入力してください" autocomplete="off" style="background: #fff; color: #000; border: 2px solid #000;">
+        <div class="btn-group">
+          <button id="kagepro-solo-submit-btn" class="btn kagepro-btn-primary">回答する</button>
+          <button id="kagepro-pass-btn" class="btn secondary" style="background: #e2e8f0; color: #000; border: 1px solid #000;">パス</button>
+        </div>
+      </div>
+
+      <!-- 3択式エリア -->
+      <div id="kagepro-3choice-area" class="setting-group hidden">
+        <div id="kagepro-choices-container" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
+        <button id="kagepro-pass-btn-3choice" class="btn secondary" style="background: #e2e8f0; color: #000; border: 1px solid #000; margin-top: 0.5rem;">パス</button>
+      </div>
+    </div>
+
+    <!-- カゲロウプロジェクトクイズ 結果画面 -->
+    <div id="kagepro-answer-screen" class="screen kagepro-theme">
+      <h2 id="kagepro-result-status" style="color: #000; font-weight: bold;">⭕ 正解！</h2>
+      <div class="song-detail" style="background: rgba(255,255,255,0.85); border: 2px solid #000; border-radius: 8px; padding: 1rem; margin: 1.5rem 0;">
+        <h3 id="kagepro-detail-title" style="color: #000; font-weight: bold;">曲名</h3>
+        <p style="color: #334155; margin-top: 0.5rem; font-weight: bold;">正解の答え</p>
+      </div>
+      <button id="kagepro-next-question-btn" class="btn kagepro-btn-primary">次の問題へ</button>
+    </div>
+
+    <!-- カゲロウプロジェクトクイズ 最終結果画面 -->
+    <div id="kagepro-final-screen" class="screen kagepro-theme">
+      <h2 style="color: #000; font-weight: bold;">結果発表</h2>
+      <div class="final-score-text">
+        <p style="color: #000; font-weight: bold;">あなたの成績は...</p>
+        <div class="highlight-score" style="color: #dc2626;"><span id="kagepro-final-score">0</span> / <span id="kagepro-final-total">5</span></div>
+      </div>
+      <button id="kagepro-back-to-menu-btn" class="btn kagepro-btn-primary">メニューに戻る</button>
+    </div>
+
+    <!-- カゲロウプロジェクト 管理者メニュー画面 -->
+    <div id="kagepro-admin-screen" class="screen kagepro-theme">
+      <div class="form-header">
+        <h2 style="color: #000; font-size: 1.2rem; font-weight: bold;">カゲプロ管理者メニュー</h2>
+        <button id="kagepro-close-admin-btn" class="btn secondary small-btn" style="background: #e2e8f0; color: #000; border: 1px solid #000;">戻る</button>
+      </div>
+
+      <div id="kagepro-admin-msg" class="message hidden"></div>
+
+      <div class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
+        <h3 style="color: #000; font-weight: bold;">新規問題の追加</h3>
+        <form id="kagepro-add-form">
+          <div class="form-group">
+            <label style="color: #000; font-weight: bold;">問題 (歌詞など) *</label>
+            <textarea id="kagepro-add-question" rows="3" required style="background: #fff; border-color: #000; color:#000;"></textarea>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label style="color: #000; font-weight: bold;"><input type="checkbox" id="kagepro-add-is-3choice"> 3択問題にする</label>
+          </div>
+
+          <!-- 入力式用正解欄 -->
+          <div id="kagepro-add-single-answer-group" class="form-group">
+            <label style="color: #000; font-weight: bold;">解答 *</label>
+            <input type="text" id="kagepro-add-answer" style="background: #fff; border-color: #000; color:#000;">
+          </div>
+
+          <!-- 3択式用選択肢欄 -->
+          <div id="kagepro-add-3choice-group" class="form-group hidden">
+            <label style="color: #000; font-weight: bold;">① 正解の入力 *</label>
+            <input type="text" id="kagepro-add-choice1" placeholder="正解を入力" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
+            <label style="color: #000; font-weight: bold;">② 不正解選択肢1 *</label>
+            <input type="text" id="kagepro-add-choice2" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
+            <label style="color: #000; font-weight: bold;">③ 不正解選択肢2 *</label>
+            <input type="text" id="kagepro-add-choice3" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000;">
+          </div>
+
+          <div class="form-group">
+            <label style="color: #000; font-weight: bold;">ヒント *</label>
+            <input type="text" id="kagepro-add-hint" required style="background: #fff; border-color: #000; color:#000;">
+          </div>
+          <button type="submit" class="btn kagepro-btn-primary">問題を登録</button>
+        </form>
+      </div>
+
+      <hr class="divider" style="border-color: #000;">
+
+      <div class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
+        <h3 style="color: #000; font-weight: bold;">登録済み問題一覧</h3>
+        <p style="font-size:0.85rem; color:#334155;">タップすると編集・削除ができます</p>
+        <div id="kagepro-list-container" class="song-list-container"></div>
+      </div>
+    </div>
+
+    <!-- カゲロウプロジェクト 問題編集画面 -->
+    <div id="kagepro-edit-screen" class="screen kagepro-theme">
+      <div class="form-header">
+        <h2 style="color: #000; font-weight: bold;">問題情報の編集</h2>
+        <button id="kagepro-cancel-edit-btn" class="btn secondary small-btn" style="background: #e2e8f0; color:#000; border:1px solid #000;">キャンセル</button>
+      </div>
+
+      <form id="kagepro-edit-form" class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
+        <div class="form-group">
+          <label style="color: #000; font-weight: bold;">問題 *</label>
+          <textarea id="kagepro-edit-question" rows="3" required style="background: #fff; border-color: #000; color:#000;"></textarea>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label style="color: #000; font-weight: bold;"><input type="checkbox" id="kagepro-edit-is-3choice"> 3択問題にする</label>
+        </div>
+
+        <!-- 入力式用正解欄 -->
+        <div id="kagepro-edit-single-answer-group" class="form-group">
+          <label style="color: #000; font-weight: bold;">解答 *</label>
+          <input type="text" id="kagepro-edit-answer" style="background: #fff; border-color: #000; color:#000;">
+        </div>
+
+        <!-- 3択式用選択肢欄 -->
+        <div id="kagepro-edit-3choice-group" class="form-group hidden">
+          <label style="color: #000; font-weight: bold;">① 正解の入力 *</label>
+          <input type="text" id="kagepro-edit-choice1" placeholder="正解を入力" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
+          <label style="color: #000; font-weight: bold;">② 不正解選択肢1 *</label>
+          <input type="text" id="kagepro-edit-choice2" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
+          <label style="color: #000; font-weight: bold;">③ 不正解選択肢2 *</label>
+          <input type="text" id="kagepro-edit-choice3" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000;">
+        </div>
+
+        <div class="form-group">
+          <label style="color: #000; font-weight: bold;">ヒント *</label>
+          <input type="text" id="kagepro-edit-hint" required style="background: #fff; border-color: #000; color:#000;">
+        </div>
+
+        <div class="btn-group" style="margin-top: 1.5rem;">
+          <button type="submit" class="btn kagepro-btn-primary">変更を保存</button>
+          <button type="button" id="kagepro-open-delete-modal-btn" class="btn danger">この問題を削除</button>
+        </div>
+      </form>
+    </div>
+
   </div>
 
   <!-- 8. 削除確認ポップアップ (モーダル) -->
@@ -345,6 +541,18 @@
       <div class="modal-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
         <button id="cancel-delete-btn" class="btn secondary">キャンセル</button>
         <button id="confirm-delete-btn" class="btn danger">削除する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- カゲプロ削除確認モーダル -->
+  <div id="kagepro-delete-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="background: #fff; border: 2px solid #dc2626;">
+      <h3 style="color: #dc2626;">⚠️ 問題の削除</h3>
+      <p style="color: #000; font-weight: bold;">本当にこの問題を削除しますか？</p>
+      <div class="modal-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button id="kagepro-cancel-delete-btn" class="btn secondary">キャンセル</button>
+        <button id="kagepro-confirm-delete-btn" class="btn danger">削除する</button>
       </div>
     </div>
   </div>
