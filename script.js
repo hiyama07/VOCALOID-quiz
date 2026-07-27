@@ -72,6 +72,22 @@ const defaultSongs = [
   }
 ];
 
+// 初期カゲプロ問題データ (3択例含む)
+const defaultKageproQuestions = [
+  {
+    question: "「目を眩ませる」能力を持つ、カゲプロの登場人物は誰？",
+    is3Choice: false,
+    answer: "如月モモ",
+    hint: "アイドルで、アヤノの妹"
+  },
+  {
+    question: "「サマータイムレコード」の舞台となっている夏の日の思い出の場所は何年前？",
+    is3Choice: true,
+    choices: ["10年前", "8年前", "12年前"], // 0番目が正解
+    hint: "「あれからーーの話なんだろう」"
+  }
+];
+
 let songDatabase = [];
 let kageproDatabase = [];
 let currentEditingIndex = null;
@@ -103,6 +119,13 @@ function setupRealtimeKageproListener() {
     snapshot.forEach((docSnap) => {
       kageproDatabase.push({ id: docSnap.id, ...docSnap.data() });
     });
+
+    if (kageproDatabase.length === 0 && snapshot.empty) {
+      for (const item of defaultKageproQuestions) {
+        await addDoc(kageproRef, item);
+      }
+      return;
+    }
     renderKageproList();
   });
 }
@@ -140,7 +163,7 @@ let kageproGameState = {
   shuffledChoices: []
 };
 
-window.showScreen = function(screenId) {
+function showScreen(screenId) {
   const allScreens = document.querySelectorAll(".screen");
   allScreens.forEach(screen => screen.classList.remove("active"));
 
@@ -521,7 +544,7 @@ function loadVSQuestion() {
   document.getElementById("vs-p2-score").innerText = gameState.p2Score;
   document.getElementById("vs-lyrics-box").innerHTML = "";
 
-  document.getElementById("vs-choice-overlay")?.classList.add("hidden");
+  document.getElementById("vs-choice-overlay").classList.add("hidden");
   document.getElementById("vs-pause-modal").classList.add("hidden");
 
   updateVSButtonStates();
@@ -605,24 +628,8 @@ document.getElementById("vs-quit-game-btn").addEventListener("click", () => {
   showScreen("menu-screen");
 });
 
-document.getElementById("next-phrase-btn-vs")?.addEventListener("click", addNextVSPhrase);
-document.getElementById("pass-btn-vs")?.addEventListener("click", () => finishVSQuestion(false));
-
 function setupVSChoices() {
-  let overlay = document.getElementById("vs-choice-overlay");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.id = "vs-choice-overlay";
-    overlay.className = "modal-overlay";
-    overlay.innerHTML = `
-      <div class="modal-content">
-        <h3 id="vs-answering-title" style="margin-bottom: 1rem;">回答</h3>
-        <div id="vs-choices-container" style="display: flex; flex-direction: column; gap: 0.8rem;"></div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  }
-
+  const overlay = document.getElementById("vs-choice-overlay");
   const titleElem = document.getElementById("vs-answering-title");
   const pName = gameState.answeringPlayer === 1 ? "1P (PLAYER 1)" : "2P (PLAYER 2)";
   const pColor = gameState.answeringPlayer === 1 ? "#ef4444" : "#3b82f6";
@@ -643,7 +650,7 @@ function setupVSChoices() {
 }
 
 function handleVSAnswerResult(isCorrect) {
-  document.getElementById("vs-choice-overlay")?.classList.add("hidden");
+  document.getElementById("vs-choice-overlay").classList.add("hidden");
   if (isCorrect) {
     if (gameState.answeringPlayer === 1) gameState.p1Score++;
     if (gameState.answeringPlayer === 2) gameState.p2Score++;
@@ -675,8 +682,8 @@ function finishVSQuestion(isCorrect) {
 
   const vsInfo = document.getElementById("vs-answer-info");
   vsInfo.classList.remove("hidden");
-
-  if (isCorrect && gameState.answeringPlayer) {
+  
+  if (isCorrect) {
     document.getElementById("vs-answer-player").innerText = gameState.answeringPlayer === 1 ? "1P (赤)" : "2P (青)";
     document.getElementById("vs-answer-time").innerText = `${gameState.answerTimeSec} 秒`;
   } else {
@@ -927,6 +934,7 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
 
 // ================== カゲロウプロジェクト隠しページ機能 ==================
 
+// 1. トリガー認証 (0815)
 document.getElementById("secret-trigger-text").addEventListener("click", () => {
   document.getElementById("kagepro-pass-input").value = "";
   document.getElementById("kagepro-auth-error").classList.add("hidden");
@@ -949,6 +957,7 @@ function verifyKageproPassword() {
   }
 }
 
+// 2. カゲプロ管理者メニュー認証 (0430)
 document.getElementById("kagepro-open-admin-btn").addEventListener("click", () => {
   document.getElementById("kagepro-admin-pass-input").value = "";
   document.getElementById("kagepro-admin-auth-error").classList.add("hidden");
@@ -979,6 +988,7 @@ document.getElementById("kagepro-close-admin-btn").addEventListener("click", () 
   showScreen("kagepro-menu-screen");
 });
 
+// 3. カゲプロ フォームUI制御 (3択切り替え)
 const addIs3Choice = document.getElementById("kagepro-add-is-3choice");
 const addSingleGroup = document.getElementById("kagepro-add-single-answer-group");
 const add3ChoiceGroup = document.getElementById("kagepro-add-3choice-group");
@@ -1007,6 +1017,7 @@ editIs3Choice.addEventListener("change", () => {
   }
 });
 
+// 4. カゲプロ問題登録
 document.getElementById("kagepro-add-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const question = document.getElementById("kagepro-add-question").value.trim();
@@ -1023,7 +1034,7 @@ document.getElementById("kagepro-add-form").addEventListener("submit", async (e)
       alert("選択肢を3つすべて入力してください。");
       return;
     }
-    newQ.choices = [c1, c2, c3];
+    newQ.choices = [c1, c2, c3]; // 0番目が正解
   } else {
     const answer = document.getElementById("kagepro-add-answer").value.trim();
     if (!answer) {
@@ -1048,6 +1059,7 @@ document.getElementById("kagepro-add-form").addEventListener("submit", async (e)
   }
 });
 
+// 5. カゲプロクイズスタート＆出題
 document.getElementById("kagepro-start-btn").addEventListener("click", () => {
   if (kageproDatabase.length === 0) {
     alert("問題が登録されていません。");
@@ -1061,15 +1073,16 @@ document.getElementById("kagepro-start-btn").addEventListener("click", () => {
   loadKageproQuestion();
 });
 
+// ヒント表示ボタンのイベントリスナー設定
 const showHintBtn = document.getElementById("kagepro-show-hint-btn");
 if (showHintBtn) {
   showHintBtn.addEventListener("click", () => {
     const hintDisplay = document.getElementById("kagepro-hint-display");
     const hintText = kageproGameState.currentQ?.hint;
     if (hintText && hintText.trim() !== "") {
-      hintDisplay.querySelector(".hint-content").innerText = hintText;
+      hintDisplay.innerText = hintText;
     } else {
-      hintDisplay.querySelector(".hint-content").innerText = "ヒントはありません";
+      hintDisplay.innerText = "ヒントはありません";
     }
     hintDisplay.classList.remove("hidden");
     showHintBtn.classList.add("hidden");
@@ -1083,10 +1096,11 @@ function loadKageproQuestion() {
   document.getElementById("kagepro-progress").innerText = `第 ${kageproGameState.currentIndex + 1} / ${kageproGameState.questions.length} 問`;
   document.getElementById("kagepro-lyrics-box").innerHTML = `<div class="lyric-line">${current.question}</div>`;
 
+  // ヒント表示初期化（初期状態は非表示）
   const hintDisplay = document.getElementById("kagepro-hint-display");
   const showHintBtn = document.getElementById("kagepro-show-hint-btn");
   if (hintDisplay) {
-    hintDisplay.querySelector(".hint-content").innerText = "";
+    hintDisplay.innerText = "";
     hintDisplay.classList.add("hidden");
   }
   if (showHintBtn) {
@@ -1104,6 +1118,7 @@ function loadKageproQuestion() {
     const container = document.getElementById("kagepro-choices-container");
     container.innerHTML = "";
 
+    // 0番目(正解)とその他2つをシャッフル
     const choicesObj = current.choices.map((txt, idx) => ({ text: txt, isCorrect: idx === 0 }));
     kageproGameState.shuffledChoices = choicesObj.sort(() => Math.random() - 0.5);
 
