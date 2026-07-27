@@ -518,7 +518,7 @@ select:disabled {
   display: none !important;
 }
 
-/* ================= ヒント手動表示用スタイル (追加領域) ================= */
+/* ヒント機能用スタイル */
 .hint-container {
   margin-bottom: 1rem;
   display: flex;
@@ -584,9 +584,9 @@ select:disabled {
   line-height: 1.4;
 }
 
-/* ================= カゲプロ隠しページ専用スタイル (高彩度水色・赤の図形・黒ゴシック) ================= */
+/* カゲプロ隠しページ専用スタイル */
 .kagepro-theme {
-  background-color: #00d2ff !important; /* 彩度の高い水色（単色） */
+  background-color: #00d2ff !important;
   color: #000000 !important;
   font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'メイリオ', Meiryo, sans-serif !important;
   position: relative;
@@ -598,7 +598,6 @@ select:disabled {
   z-index: 10;
 }
 
-/* 浮遊する赤の六角形・三角形 */
 .kagepro-shape {
   position: absolute;
   fill: #dc2626;
@@ -636,7 +635,7 @@ select:disabled {
 }
 
 .kagepro-btn-primary {
-  background: #dc2626 !important; /* 赤 */
+  background: #dc2626 !important;
   color: #ffffff !important;
   border: 2px solid #000 !important;
   font-weight: bold;
@@ -680,7 +679,6 @@ select:disabled {
   color: #000;
 }
 
-/* カゲプロテーマ適用時のヒントスタイル自動追従 */
 .kagepro-theme .hint-toggle-btn {
   background-color: #ffffff !important;
   color: #000000 !important;
