@@ -77,6 +77,11 @@
 
       <button id="start-btn" class="btn primary">ゲームスタート！</button>
 
+      <!-- 遊び方の説明を見るボタン（メニュー用・誤操作防止用デザイン） -->
+      <div style="margin-top: 0.8rem;">
+        <button id="open-manual-btn" class="btn secondary" style="background:#fff; color:#000; border:2px solid #000; font-weight:bold; box-shadow:3px 3px 0px #000; width:100%;">📖 遊び方の説明を見る</button>
+      </div>
+
       <div class="admin-link-wrapper">
         <button id="open-admin-btn" class="subtle-link-btn">管理者メニュー</button>
       </div>
@@ -196,7 +201,7 @@
       <h2>結果発表</h2>
       
       <div id="solo-final-result" class="final-score-text">
-        <p>あなたの正解数は...</p>
+        <p>あなたの正解수는...</p>
         <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
       </div>
 
@@ -227,6 +232,11 @@
       <div class="form-header">
         <h2>管理者メニュー</h2>
         <button id="close-admin-btn" class="btn secondary small-btn">戻る</button>
+      </div>
+
+      <!-- 管理者メニュー内の「説明を見る」ボタン (誤操作防止仕様) -->
+      <div style="margin-bottom: 1.2rem;">
+        <button id="admin-manual-btn" class="btn secondary" style="background:#fff; color:#000; border:2px solid #000; font-weight:bold; box-shadow:3px 3px 0px #000; font-size:0.9rem; padding:0.6rem; width:100%;">📖 説明を見る</button>
       </div>
 
       <div id="admin-msg" class="message hidden"></div>
@@ -329,6 +339,53 @@
           <button type="button" id="open-delete-modal-btn" class="btn danger">この楽曲を削除</button>
         </div>
       </form>
+    </div>
+
+    <!-- ================= 遊び方の説明書モーダル ================= -->
+    <div id="manual-modal" class="modal-overlay hidden">
+      <div class="modal-content" style="background:#fff; border:3px solid #000; box-shadow:5px 5px 0px #000; max-height:85vh; display:flex; flex-direction:column; color:#000;">
+        <h3 style="color:#000; font-weight:900; margin-bottom:1rem; text-align:center;">📖 遊び方の説明</h3>
+        <div style="overflow-y:auto; flex:1; font-size:0.85rem; color:#000; line-height:1.5; padding-right:0.5rem; display:flex; flex-direction:column; gap:1rem; text-align:left;">
+          <div>
+            <strong style="color:#2563eb; display:block; margin-bottom:0.2rem;">【カテゴリー】</strong>
+            <p><strong>全曲：</strong>全ての楽曲がランダムで出題されます(※デフォルト)</p>
+            <p><strong>殿堂入り/伝説入り：</strong>ニコニコ動画、YouTube等で再生回数100万以上の楽曲のみが出題されます。※手作業で追加しているため割とアバウト寄りです</p>
+            <p><strong>年代別：</strong>～2026年までに投稿された楽曲が3年事に分かれています。自分の世代の曲でプレイ可能です。</p>
+          </div>
+          <div>
+            <strong style="color:#2563eb; display:block; margin-bottom:0.2rem;">【出題パート】</strong>
+            <p>楽曲のどの部分の歌詞を出題するか選択できます。</p>
+            <p><strong>歌い出し：</strong>曲の最初のフレーズから出題されます(※デフォルト)</p>
+            <p><strong>サビ：</strong>曲のサビから出題されます(手作業で追加しておりますので曲によってはサビ？という所がある可能性があります)</p>
+            <p><strong>ラスサビ前：</strong>主にBメロを指しますがその部分が存在しない曲はラスサビ前の部分、もしくは転調など他とはメロディーが異なる部分を抜粋しています。</p>
+          </div>
+          <div>
+            <strong style="color:#2563eb; display:block; margin-bottom:0.2rem;">【フレーズ進行】</strong>
+            <p><strong>自動：</strong>15秒経つと次のフレーズが表示されます。</p>
+            <p><strong>手動：</strong>好きなタイミングで次のフレーズを表示することができます。</p>
+          </div>
+          <div>
+            <strong style="color:#2563eb; display:block; margin-bottom:0.2rem;">【プレイモード】</strong>
+            <p><strong>1人プレイ：</strong>1人で遊ぶモードです。時間制限などは無く、回答は手打ちです。</p>
+            <p><strong>複数人モード：</strong>早押しの3択クイズになります。勝ち負けが無い為VSモードとは異なります。不正解でも解答権が復活するためオフラインで複数人でエンジョイプレイに向いています。※もちろん1人でも可能です！</p>
+            <p><strong>2人対戦モード：</strong>横画面になり1Pと2Pにそれぞれ早押しボタンが用意されています。ゲーム終了時には獲得ポイントとどちらが勝利したかが表示されます。早押ししたタイムが記録されますがポイントUPやペナルティなどは特にありません。</p>
+            <p><strong>タイムアタック：</strong>1人で挑戦するモードです。問題数50問固定で回答は手打ちのみです。ブラウザにランキング情報が保存されるので自分の限界に挑戦してみましょう。(※オンラインでの他のプレイヤーのタイムは表示されません)</p>
+          </div>
+          <div>
+            <strong style="color:#2563eb; display:block; margin-bottom:0.2rem;">【出題数】</strong>
+            <p>5問、10問、20問、50問から選択可能です。</p>
+          </div>
+          <div>
+            <strong style="color:#2563eb; display:block; margin-bottom:0.2rem;">《管理者メニューについて》</strong>
+            <p>現時点では誰でも楽曲追加が可能です。他の曲を参考に項目に入力してお好きな楽曲を追加してください。※情報は正しいものでお願いします。</p>
+            <p>〇他の楽曲で誤字脱字や情報に間違いがあった場合は修正可能です。</p>
+            <p>〇楽曲は間違えて登録した、被ってる曲がある場合を覗いて基本的には削除しないでください。</p>
+          </div>
+        </div>
+        <div style="margin-top:1rem; text-align:center;">
+          <button id="close-manual-btn" class="btn primary" style="padding:0.6rem; width:100%;">閉じる</button>
+        </div>
+      </div>
     </div>
 
     <!-- ================= 隠し：カゲロウプロジェクトクイズ関連画面 ================= -->
