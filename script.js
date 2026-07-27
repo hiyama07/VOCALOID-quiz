@@ -22,6 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SONGS_COLLECTION = "vocaloid_songs";
+const KAGEPRO_COLLECTION = "kagepro_questions";
 
 // 初期サンプル楽曲データ
 const defaultSongs = [
@@ -71,20 +72,33 @@ const defaultSongs = [
   }
 ];
 
-let songDatabase = [];
-let currentEditingIndex = null;
+// 初期カゲプロ問題データ (3択例含む)
+const defaultKageproQuestions = [
+  {
+    question: "「目を眩ませる」能力を持つ、カゲプロの登場人物は誰？",
+    is3Choice: false,
+    answer: "如月モモ",
+    hint: "アイドルで、アヤトシの妹"
+  },
+  {
+    question: "「サマータイムレコード」の舞台となっている夏の日の思い出の場所は何年前？",
+    is3Choice: true,
+    choices: ["10年前", "8年前", "12年前"], // 0番目が正解
+    hint: "「あれからーーの話なんだろう」"
+  }
+];
 
-// Firestore リアルタイム同期
+let songDatabase = [];
+let kageproDatabase = [];
+let currentEditingIndex = null;
+let currentKageproEditingIndex = null;
+
 function setupRealtimeSongListener() {
   const songsRef = collection(db, SONGS_COLLECTION);
-
   onSnapshot(songsRef, async (snapshot) => {
     songDatabase = [];
     snapshot.forEach((docSnap) => {
-      songDatabase.push({
-        id: docSnap.id,
-        ...docSnap.data()
-      });
+      songDatabase.push({ id: docSnap.id, ...docSnap.data() });
     });
 
     if (songDatabase.length === 0 && snapshot.empty) {
@@ -93,15 +107,29 @@ function setupRealtimeSongListener() {
       }
       return;
     }
-
     updateAdminSongCount();
     renderSongList();
-  }, (error) => {
-    console.error("Firestoreリアルタイム同期エラー:", error);
   });
 }
 
-// ゲーム状態管理
+function setupRealtimeKageproListener() {
+  const kageproRef = collection(db, KAGEPRO_COLLECTION);
+  onSnapshot(kageproRef, async (snapshot) => {
+    kageproDatabase = [];
+    snapshot.forEach((docSnap) => {
+      kageproDatabase.push({ id: docSnap.id, ...docSnap.data() });
+    });
+
+    if (kageproDatabase.length === 0 && snapshot.empty) {
+      for (const item of defaultKageproQuestions) {
+        await addDoc(kageproRef, item);
+      }
+      return;
+    }
+    renderKageproList();
+  });
+}
+
 let gameState = {
   questions: [],
   currentIndex: 0,
@@ -111,33 +139,36 @@ let gameState = {
   displayedPhraseCount: 0,
   timerInterval: null,
   timeLeft: 15,
-  mode: "solo", // "solo" | "multi" | "vs" | "timeattack"
+  mode: "solo",
   phraseMode: "auto",
   selectedPart: "intro",
-  // タイムアタック・対戦用経過タイマー
   elapsedStartTime: 0,
   elapsedPausedTime: 0,
   taTotalTimeMs: 0,
-  // 2人対戦(VS)用データ
   p1Score: 0,
   p2Score: 0,
   questionStartTime: 0,
-  answeringPlayer: null, // 1 | 2
+  answeringPlayer: null,
   p1Attempted: false,
   p2Attempted: false,
   answerTimeSec: "0.00",
   isPaused: false
 };
 
-// 画面切り替え処理
+let kageproGameState = {
+  questions: [],
+  currentIndex: 0,
+  score: 0,
+  currentQ: null,
+  shuffledChoices: []
+};
+
 function showScreen(screenId) {
   const allScreens = document.querySelectorAll(".screen");
   allScreens.forEach(screen => screen.classList.remove("active"));
 
   const targetScreen = document.getElementById(screenId);
-  if (targetScreen) {
-    targetScreen.classList.add("active");
-  }
+  if (targetScreen) targetScreen.classList.add("active");
 
   const container = document.querySelector(".container");
   if (screenId === "vs-game-screen") {
@@ -147,7 +178,6 @@ function showScreen(screenId) {
   }
 }
 
-// UIエレメント参照
 const categorySelect = document.getElementById("category-select");
 const eraGroup = document.getElementById("era-group");
 const eraSelect = document.getElementById("era-select");
@@ -164,10 +194,8 @@ function getFilteredSongs() {
 
   return songDatabase.filter(song => {
     if (!song.lyrics || !song.lyrics[part] || song.lyrics[part].length === 0) return false;
-
-    if (category === "halloffame") {
-      return song.hallOfFame;
-    } else if (category === "era") {
+    if (category === "halloffame") return song.hallOfFame;
+    if (category === "era") {
       const year = song.year;
       if (era === "~2011") return year <= 2011;
       if (era === "2012~2015") return year >= 2012 && year <= 2015;
@@ -218,7 +246,6 @@ function getRankingKey() {
   const era = eraSelect.value;
   const part = partSelect.value;
   const catKey = (category === "era") ? `era_${era}` : category;
-
   return `vocaloid_ta_rank_${catKey}_${part}_50`;
 }
 
@@ -227,20 +254,17 @@ function formatTime(ms) {
   const minutes = Math.floor(totalSec / 60);
   const seconds = totalSec % 60;
   const millis = Math.floor((ms % 1000) / 10);
-
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(2, '0')}`;
 }
 
 function updateRankingDisplay() {
   if (playerModeSelect.value !== "timeattack") return;
-
   const key = getRankingKey();
   const rawData = localStorage.getItem(key);
   const rankingList = document.getElementById("ranking-list");
   rankingList.innerHTML = "";
 
   const ranks = rawData ? JSON.parse(rawData) : [];
-
   if (ranks.length === 0) {
     rankingList.innerHTML = '<li class="ranking-item" style="color:#94a3b8; justify-content:center;">記録がまだありません</li>';
     return;
@@ -249,10 +273,7 @@ function updateRankingDisplay() {
   ranks.slice(0, 3).forEach((item, idx) => {
     const li = document.createElement("li");
     li.className = "ranking-item";
-    li.innerHTML = `
-      <span class="ranking-rank">${idx + 1}位</span>
-      <span class="ranking-time">${formatTime(item.timeMs)}</span>
-    `;
+    li.innerHTML = `<span class="ranking-rank">${idx + 1}位</span><span class="ranking-time">${formatTime(item.timeMs)}</span>`;
     rankingList.appendChild(li);
   });
 }
@@ -260,7 +281,6 @@ function updateRankingDisplay() {
 function generateQuestionPool(songPool, targetCount) {
   const result = [];
   const usageCount = {};
-
   songPool.forEach(song => { usageCount[song.title] = 0; });
 
   while (result.length < targetCount) {
@@ -271,18 +291,14 @@ function generateQuestionPool(songPool, targetCount) {
       if (result.length >= targetCount) break;
       continue;
     }
-
     const randomIndex = Math.floor(Math.random() * availableSongs.length);
     const selectedSong = availableSongs[randomIndex];
-
     result.push(selectedSong);
     usageCount[selectedSong.title]++;
   }
-
   return result;
 }
 
-// 汎用3択選択肢生成関数
 function create3Choices(correctTitle) {
   let otherSongs = songDatabase
     .map(s => s.title)
@@ -296,25 +312,20 @@ function create3Choices(correctTitle) {
   return options.sort(() => Math.random() - 0.5);
 }
 
-// スタートボタン処理
 document.getElementById("start-btn").addEventListener("click", () => {
   const part = partSelect.value;
   const phraseMode = document.getElementById("phrase-mode-select").value;
   const playerMode = playerModeSelect.value;
-  
   const selectedCount = parseInt(countSelect.value, 10);
   const count = (playerMode === "timeattack") ? 50 : selectedCount;
 
   const filtered = getFilteredSongs();
-
   if (filtered.length === 0) {
-    alert("条件に一致する曲が登録されていません。別の条件を選ぶか曲を追加してください。");
+    alert("条件に一致する曲が登録されていません。");
     return;
   }
 
-  const questions = generateQuestionPool(filtered, count);
-
-  gameState.questions = questions;
+  gameState.questions = generateQuestionPool(filtered, count);
   gameState.currentIndex = 0;
   gameState.score = 0;
   gameState.p1Score = 0;
@@ -338,7 +349,6 @@ document.getElementById("start-btn").addEventListener("click", () => {
   }
 });
 
-// VS準備OKボタン
 document.getElementById("vs-orient-ok-btn").addEventListener("click", () => {
   document.getElementById("vs-orient-modal").classList.add("hidden");
   showScreen("vs-game-screen");
@@ -375,27 +385,20 @@ function setupUIForModes() {
 function startStopwatch() {
   clearInterval(gameState.timerInterval);
   const timerDisplay = document.getElementById("timer-display");
-
   gameState.timerInterval = setInterval(() => {
     const elapsed = Date.now() - gameState.elapsedStartTime;
     timerDisplay.innerText = formatTime(elapsed);
   }, 30);
 }
 
-// --- 通常 (1人・複数人早押し) クイズ処理 ---
 function loadQuestion() {
-  if (gameState.mode !== "timeattack") {
-    clearInterval(gameState.timerInterval);
-  }
-  
+  if (gameState.mode !== "timeattack") clearInterval(gameState.timerInterval);
   const current = gameState.questions[gameState.currentIndex];
   gameState.currentSong = current;
   gameState.currentPhrases = current.lyrics[gameState.selectedPart];
   gameState.displayedPhraseCount = 0;
 
-  let progressText = `第 ${gameState.currentIndex + 1} / ${gameState.questions.length} 問`;
-
-  document.getElementById("question-progress").innerText = progressText;
+  document.getElementById("question-progress").innerText = `第 ${gameState.currentIndex + 1} / ${gameState.questions.length} 問`;
   document.getElementById("lyrics-box").innerHTML = "";
   document.getElementById("solo-input").value = "";
 
@@ -407,21 +410,15 @@ function loadQuestion() {
   }
 
   addNextPhrase();
-
   if (gameState.phraseMode === "auto" && gameState.mode !== "timeattack") {
     startTimer();
   }
 }
 
-// 複数人モード：早押しボタン押下時の処理
 document.getElementById("multi-buzz-btn").addEventListener("click", () => {
-  if (gameState.phraseMode === "auto") {
-    clearInterval(gameState.timerInterval);
-  }
-
+  if (gameState.phraseMode === "auto") clearInterval(gameState.timerInterval);
   document.getElementById("multi-buzz-btn").disabled = true;
   document.getElementById("multi-buzz-btn").innerText = "回答中...";
-
   setupMultiChoicesModal();
 });
 
@@ -434,27 +431,20 @@ function setupMultiChoicesModal() {
   choices.forEach(optText => {
     const btn = document.createElement("button");
     btn.className = "btn secondary";
-    btn.style.padding = "0.85rem";
     btn.innerText = optText;
-
     btn.onclick = () => {
       modal.classList.add("hidden");
-      const isCorrect = (optText === gameState.currentSong.title);
-      
-      if (isCorrect) {
+      if (optText === gameState.currentSong.title) {
         finishQuestion(true);
       } else {
         alert("不正解！ボタンが復帰します。");
         document.getElementById("multi-buzz-btn").disabled = false;
         document.getElementById("multi-buzz-btn").innerText = "PUSH!! (早押し)";
-        if (gameState.phraseMode === "auto") {
-          startTimer();
-        }
+        if (gameState.phraseMode === "auto") startTimer();
       }
     };
     container.appendChild(btn);
   });
-
   modal.classList.remove("hidden");
 }
 
@@ -477,7 +467,6 @@ function startTimer() {
   gameState.timerInterval = setInterval(() => {
     gameState.timeLeft--;
     timerDisplay.innerText = gameState.timeLeft;
-
     if (gameState.timeLeft <= 0) {
       if (gameState.displayedPhraseCount < gameState.currentPhrases.length) {
         addNextPhrase();
@@ -506,19 +495,14 @@ document.getElementById("solo-input").addEventListener("keypress", (e) => {
 function handleSoloAnswer() {
   const input = document.getElementById("solo-input").value.trim().toLowerCase();
   const correct = gameState.currentSong.title.trim().toLowerCase();
-
   const isCorrect = input !== "" && (correct.includes(input) || input.includes(correct));
   finishQuestion(isCorrect);
 }
 
-document.getElementById("pass-btn").addEventListener("click", () => {
-  finishQuestion(false, true);
-});
+document.getElementById("pass-btn").addEventListener("click", () => finishQuestion(false, true));
 
 function finishQuestion(isCorrect, isPass = false) {
-  if (gameState.mode !== "timeattack") {
-    clearInterval(gameState.timerInterval);
-  }
+  if (gameState.mode !== "timeattack") clearInterval(gameState.timerInterval);
 
   if (isCorrect) {
     gameState.score++;
@@ -540,12 +524,10 @@ function finishQuestion(isCorrect, isPass = false) {
   showScreen("answer-screen");
 }
 
-// --- ⚔️ 2人対戦モード (VS) 処理 ---
 let vsMainTimer = null;
 
 function loadVSQuestion() {
   clearInterval(vsMainTimer);
-
   const current = gameState.questions[gameState.currentIndex];
   gameState.currentSong = current;
   gameState.currentPhrases = current.lyrics[gameState.selectedPart];
@@ -560,24 +542,19 @@ function loadVSQuestion() {
   document.getElementById("vs-progress").innerText = `第 ${gameState.currentIndex + 1} / ${gameState.questions.length} 問`;
   document.getElementById("vs-p1-score").innerText = gameState.p1Score;
   document.getElementById("vs-p2-score").innerText = gameState.p2Score;
-
   document.getElementById("vs-lyrics-box").innerHTML = "";
 
   document.getElementById("vs-choice-overlay").classList.add("hidden");
   document.getElementById("vs-pause-modal").classList.add("hidden");
 
   updateVSButtonStates();
-
   addNextVSPhrase();
   startVSTimers();
 }
 
 function updateVSButtonStates() {
-  const p1Btn = document.getElementById("vs-p1-btn");
-  const p2Btn = document.getElementById("vs-p2-btn");
-
-  p1Btn.disabled = gameState.p1Attempted;
-  p2Btn.disabled = gameState.p2Attempted;
+  document.getElementById("vs-p1-btn").disabled = gameState.p1Attempted;
+  document.getElementById("vs-p2-btn").disabled = gameState.p2Attempted;
 }
 
 function startVSTimers() {
@@ -587,20 +564,14 @@ function startVSTimers() {
   const stopwatchElem = document.getElementById("vs-stopwatch-display");
   const nextPhraseElem = document.getElementById("vs-next-phrase-timer");
 
-  nextPhraseElem.innerText = gameState.timeLeft;
-
   vsMainTimer = setInterval(() => {
     if (gameState.isPaused) return;
-
-    // 1. ストップウォッチ（全体の経過時間）
     const elapsed = Date.now() - gameState.elapsedStartTime;
     stopwatchElem.innerText = formatTime(elapsed);
 
-    // 2. 自動進行フレーズタイマー
     if (gameState.phraseMode === "auto") {
       const secElapsed = Math.floor(elapsed / 1000);
       const remainingSec = 15 - (secElapsed % 15);
-      
       nextPhraseElem.innerText = remainingSec;
 
       if (remainingSec === 15 && secElapsed > 0 && Math.floor((elapsed - 30) / 1000) % 15 !== 0) {
@@ -626,20 +597,17 @@ function addNextVSPhrase() {
 function handleBuzz(playerNum) {
   clearInterval(vsMainTimer);
   gameState.answeringPlayer = playerNum;
-
   const elapsedMs = Date.now() - gameState.questionStartTime;
   gameState.answerTimeSec = (elapsedMs / 1000).toFixed(2);
 
   document.getElementById("vs-p1-btn").disabled = true;
   document.getElementById("vs-p2-btn").disabled = true;
-
   setupVSChoices();
 }
 
 document.getElementById("vs-p1-btn").addEventListener("click", () => handleBuzz(1));
 document.getElementById("vs-p2-btn").addEventListener("click", () => handleBuzz(2));
 
-// 一時中断(ポーズ)処理
 document.getElementById("vs-pause-btn").addEventListener("click", () => {
   gameState.isPaused = true;
   gameState.elapsedPausedTime = Date.now();
@@ -663,41 +631,29 @@ document.getElementById("vs-quit-game-btn").addEventListener("click", () => {
 function setupVSChoices() {
   const overlay = document.getElementById("vs-choice-overlay");
   const titleElem = document.getElementById("vs-answering-title");
-  
   const pName = gameState.answeringPlayer === 1 ? "1P (PLAYER 1)" : "2P (PLAYER 2)";
   const pColor = gameState.answeringPlayer === 1 ? "#ef4444" : "#3b82f6";
 
   titleElem.innerHTML = `<span style="color:${pColor}; font-weight:bold;">${pName}</span> の回答`;
-
   const choicesContainer = document.getElementById("vs-choices-container");
   choicesContainer.innerHTML = "";
 
   const options = create3Choices(gameState.currentSong.title);
-
   options.forEach(optText => {
     const btn = document.createElement("button");
     btn.className = "btn choice-btn secondary";
-    btn.style.width = "100%";
-    btn.style.padding = "0.8rem";
     btn.innerText = optText;
-
-    btn.onclick = () => {
-      const isCorrect = (optText === gameState.currentSong.title);
-      handleVSAnswerResult(isCorrect);
-    };
+    btn.onclick = () => handleVSAnswerResult(optText === gameState.currentSong.title);
     choicesContainer.appendChild(btn);
   });
-
   overlay.classList.remove("hidden");
 }
 
 function handleVSAnswerResult(isCorrect) {
   document.getElementById("vs-choice-overlay").classList.add("hidden");
-
   if (isCorrect) {
     if (gameState.answeringPlayer === 1) gameState.p1Score++;
     if (gameState.answeringPlayer === 2) gameState.p2Score++;
-
     finishVSQuestion(true);
   } else {
     if (gameState.answeringPlayer === 1) gameState.p1Attempted = true;
@@ -715,7 +671,6 @@ function handleVSAnswerResult(isCorrect) {
 
 function finishVSQuestion(isCorrect) {
   clearInterval(vsMainTimer);
-
   if (isCorrect) {
     const pName = gameState.answeringPlayer === 1 ? "1P" : "2P";
     document.getElementById("result-status").innerText = `⭕ ${pName} 正解！ (+1 Point)`;
@@ -764,7 +719,6 @@ document.getElementById("next-question-btn").addEventListener("click", () => {
       } else {
         document.getElementById("time-attack-result").classList.add("hidden");
       }
-
       document.getElementById("final-score").innerText = gameState.score;
       document.getElementById("final-total").innerText = gameState.questions.length;
       document.getElementById("vs-final-result").classList.add("hidden");
@@ -795,18 +749,13 @@ function showVSSubmittal() {
     winnerText.innerText = "🤝 DRAW (引き分け)";
     winnerText.style.color = "#f59e0b";
   }
-
   showScreen("final-screen");
 }
 
 function handleTimeAttackFinish() {
   const totalMs = gameState.taTotalTimeMs;
-  const timeAttackResultArea = document.getElementById("time-attack-result");
-  const clearTimeDisplay = document.getElementById("final-clear-time");
-  const newRecordBadge = document.getElementById("new-record-badge");
-
-  timeAttackResultArea.classList.remove("hidden");
-  clearTimeDisplay.innerText = formatTime(totalMs);
+  document.getElementById("time-attack-result").classList.remove("hidden");
+  document.getElementById("final-clear-time").innerText = formatTime(totalMs);
 
   const key = getRankingKey();
   const rawData = localStorage.getItem(key);
@@ -817,9 +766,9 @@ function handleTimeAttackFinish() {
 
   const rankIndex = ranks.findIndex(item => item.timeMs === totalMs);
   if (rankIndex >= 0 && rankIndex < 3) {
-    newRecordBadge.classList.remove("hidden");
+    document.getElementById("new-record-badge").classList.remove("hidden");
   } else {
-    newRecordBadge.classList.add("hidden");
+    document.getElementById("new-record-badge").classList.add("hidden");
   }
 
   ranks = ranks.slice(0, 3);
@@ -831,7 +780,7 @@ document.getElementById("back-to-menu-btn").addEventListener("click", () => {
   showScreen("menu-screen");
 });
 
-// 管理者メニュー操作
+// 通常管理者メニュー操作
 const adminMsg = document.getElementById("admin-msg");
 const addTitleInput = document.getElementById("add-title");
 
@@ -852,9 +801,7 @@ addTitleInput.addEventListener("input", () => {
     adminMsg.classList.add("hidden");
     return;
   }
-
   const isDuplicate = songDatabase.some(song => song.title.toLowerCase() === title.toLowerCase());
-
   if (isDuplicate) {
     adminMsg.innerText = "⚠️ この楽曲は既に登録されています！";
     adminMsg.className = "message error";
@@ -866,7 +813,6 @@ addTitleInput.addEventListener("input", () => {
 
 document.getElementById("add-song-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-
   const title = addTitleInput.value.trim();
   const producer = document.getElementById("add-producer").value.trim();
   const year = parseInt(document.getElementById("add-year").value, 10);
@@ -874,32 +820,17 @@ document.getElementById("add-song-form").addEventListener("submit", async (e) =>
 
   const parseText = (id) => document.getElementById(id).value.split(/\r?\n|\r/).map(s => s.trim()).filter(s => s.length > 0);
 
-  const intro = parseText("add-intro");
-  const chorus = parseText("add-chorus");
-  const prechorus = parseText("add-prechorus");
-
-  const isDuplicate = songDatabase.some(song => song.title.toLowerCase() === title.toLowerCase());
-
-  if (isDuplicate) {
-    adminMsg.innerText = "⚠️ 既に追加済みです！別の曲名を入力してください。";
-    adminMsg.className = "message error";
-    adminMsg.classList.remove("hidden");
-    return;
-  }
-
-  const newSong = { title, producer, year, hallOfFame, lyrics: { intro, chorus, prechorus } };
+  const newSong = { title, producer, year, hallOfFame, lyrics: { intro: parseText("add-intro"), chorus: parseText("add-chorus"), prechorus: parseText("add-prechorus") } };
 
   try {
     await addDoc(collection(db, SONGS_COLLECTION), newSong);
-
     adminMsg.innerText = `✅ 「${title}」をFirestoreへ追加しました！`;
     adminMsg.className = "message success";
     adminMsg.classList.remove("hidden");
-
     document.getElementById("add-song-form").reset();
   } catch (error) {
-    console.error("追加エラー:", error);
-    alert("データの追加に失敗しました。");
+    console.error(error);
+    alert("追加に失敗しました。");
   }
 });
 
@@ -911,7 +842,6 @@ function renderSongList() {
   const sortSelect = document.getElementById("admin-sort-select");
   const sortType = sortSelect ? sortSelect.value : "default";
 
-  // 元の配列要素情報（インデックス）を保持しつつソート用配列を作成
   let displaySongs = songDatabase.map((song, index) => ({ song, originalIndex: index }));
 
   if (sortType === "title") {
@@ -923,21 +853,14 @@ function renderSongList() {
   displaySongs.forEach(({ song, originalIndex }) => {
     const item = document.createElement("div");
     item.className = "song-item";
-    item.style.cursor = "pointer";
     item.innerHTML = `🎵 <strong>${song.title}</strong> (${song.producer || 'ボカロP未設定'})`;
-    
-    item.addEventListener("click", () => {
-      openEditScreen(originalIndex);
-    });
-
+    item.addEventListener("click", () => openEditScreen(originalIndex));
     container.appendChild(item);
   });
 }
 
 const adminSortSelect = document.getElementById("admin-sort-select");
-if (adminSortSelect) {
-  adminSortSelect.addEventListener("change", renderSongList);
-}
+if (adminSortSelect) adminSortSelect.addEventListener("change", renderSongList);
 
 function openEditScreen(index) {
   currentEditingIndex = index;
@@ -955,13 +878,10 @@ function openEditScreen(index) {
   showScreen("edit-song-screen");
 }
 
-document.getElementById("cancel-edit-btn").addEventListener("click", () => {
-  showScreen("admin-screen");
-});
+document.getElementById("cancel-edit-btn").addEventListener("click", () => showScreen("admin-screen"));
 
 document.getElementById("edit-song-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-
   if (currentEditingIndex === null) return;
   const targetSong = songDatabase[currentEditingIndex];
 
@@ -972,55 +892,391 @@ document.getElementById("edit-song-form").addEventListener("submit", async (e) =
     producer: document.getElementById("edit-producer").value.trim(),
     year: parseInt(document.getElementById("edit-year").value, 10),
     hallOfFame: document.getElementById("edit-halloffame").checked,
-    lyrics: {
-      intro: parseText("edit-intro"),
-      chorus: parseText("edit-chorus"),
-      prechorus: parseText("edit-prechorus")
-    }
+    lyrics: { intro: parseText("edit-intro"), chorus: parseText("edit-chorus"), prechorus: parseText("edit-prechorus") }
   };
 
   try {
     if (targetSong.id) {
-      const songRef = doc(db, SONGS_COLLECTION, targetSong.id);
-      await updateDoc(songRef, updatedData);
+      await updateDoc(doc(db, SONGS_COLLECTION, targetSong.id), updatedData);
     }
     alert(`「${updatedData.title}」の情報を更新しました！`);
     showScreen("admin-screen");
   } catch (error) {
-    console.error("更新エラー:", error);
-    alert("データの更新に失敗しました。");
+    console.error(error);
+    alert("更新に失敗しました。");
   }
 });
 
 const deleteModal = document.getElementById("delete-modal");
-
 document.getElementById("open-delete-modal-btn").addEventListener("click", () => {
   if (currentEditingIndex === null) return;
-  const song = songDatabase[currentEditingIndex];
-  document.getElementById("delete-target-title").innerText = song.title;
+  document.getElementById("delete-target-title").innerText = songDatabase[currentEditingIndex].title;
   deleteModal.classList.remove("hidden");
 });
 
-document.getElementById("cancel-delete-btn").addEventListener("click", () => {
-  deleteModal.classList.add("hidden");
-});
+document.getElementById("cancel-delete-btn").addEventListener("click", () => deleteModal.classList.add("hidden"));
 
 document.getElementById("confirm-delete-btn").addEventListener("click", async () => {
   if (currentEditingIndex === null) return;
   const targetSong = songDatabase[currentEditingIndex];
 
   try {
-    if (targetSong.id) {
-      await deleteDoc(doc(db, SONGS_COLLECTION, targetSong.id));
-    }
-
+    if (targetSong.id) await deleteDoc(doc(db, SONGS_COLLECTION, targetSong.id));
     deleteModal.classList.add("hidden");
     alert(`「${targetSong.title}」を削除しました。`);
     showScreen("admin-screen");
   } catch (error) {
-    console.error("削除エラー:", error);
-    alert("データの削除に失敗しました。");
+    console.error(error);
+    alert("削除に失敗しました。");
   }
 });
 
+
+// ================== カゲロウプロジェクト隠しページ機能 ==================
+
+// 1. トリガー認証 (0815)
+document.getElementById("secret-trigger-text").addEventListener("click", () => {
+  document.getElementById("kagepro-pass-input").value = "";
+  document.getElementById("kagepro-auth-error").classList.add("hidden");
+  showScreen("kagepro-auth-screen");
+});
+
+document.getElementById("kagepro-auth-back").addEventListener("click", () => showScreen("admin-screen"));
+
+document.getElementById("kagepro-go-btn").addEventListener("click", verifyKageproPassword);
+document.getElementById("kagepro-pass-input").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") verifyKageproPassword();
+});
+
+function verifyKageproPassword() {
+  if (document.getElementById("kagepro-pass-input").value.trim() === "0815") {
+    document.getElementById("kagepro-auth-error").classList.add("hidden");
+    showScreen("kagepro-menu-screen");
+  } else {
+    document.getElementById("kagepro-auth-error").classList.remove("hidden");
+  }
+}
+
+// 2. カゲプロ管理者メニュー認証 (0430)
+document.getElementById("kagepro-open-admin-btn").addEventListener("click", () => {
+  document.getElementById("kagepro-admin-pass-input").value = "";
+  document.getElementById("kagepro-admin-auth-error").classList.add("hidden");
+  document.getElementById("kagepro-admin-auth-modal").classList.remove("hidden");
+});
+
+document.getElementById("kagepro-admin-auth-cancel").addEventListener("click", () => {
+  document.getElementById("kagepro-admin-auth-modal").classList.add("hidden");
+});
+
+document.getElementById("kagepro-admin-auth-submit").addEventListener("click", verifyKageproAdminPassword);
+document.getElementById("kagepro-admin-pass-input").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") verifyKageproAdminPassword();
+});
+
+function verifyKageproAdminPassword() {
+  if (document.getElementById("kagepro-admin-pass-input").value.trim() === "0430") {
+    document.getElementById("kagepro-admin-auth-modal").classList.add("hidden");
+    document.getElementById("kagepro-admin-msg").classList.add("hidden");
+    renderKageproList();
+    showScreen("kagepro-admin-screen");
+  } else {
+    document.getElementById("kagepro-admin-auth-error").classList.remove("hidden");
+  }
+}
+
+document.getElementById("kagepro-close-admin-btn").addEventListener("click", () => {
+  showScreen("kagepro-menu-screen");
+});
+
+// 3. カゲプロ フォームUI制御 (3択切り替え)
+const addIs3Choice = document.getElementById("kagepro-add-is-3choice");
+const addSingleGroup = document.getElementById("kagepro-add-single-answer-group");
+const add3ChoiceGroup = document.getElementById("kagepro-add-3choice-group");
+
+addIs3Choice.addEventListener("change", () => {
+  if (addIs3Choice.checked) {
+    addSingleGroup.classList.add("hidden");
+    add3ChoiceGroup.classList.remove("hidden");
+  } else {
+    addSingleGroup.classList.remove("hidden");
+    add3ChoiceGroup.classList.add("hidden");
+  }
+});
+
+const editIs3Choice = document.getElementById("kagepro-edit-is-3choice");
+const editSingleGroup = document.getElementById("kagepro-edit-single-answer-group");
+const edit3ChoiceGroup = document.getElementById("kagepro-edit-3choice-group");
+
+editIs3Choice.addEventListener("change", () => {
+  if (editIs3Choice.checked) {
+    editSingleGroup.classList.add("hidden");
+    edit3ChoiceGroup.classList.remove("hidden");
+  } else {
+    editSingleGroup.classList.remove("hidden");
+    edit3ChoiceGroup.classList.add("hidden");
+  }
+});
+
+// 4. カゲプロ問題登録
+document.getElementById("kagepro-add-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const question = document.getElementById("kagepro-add-question").value.trim();
+  const hint = document.getElementById("kagepro-add-hint").value.trim();
+  const is3Choice = addIs3Choice.checked;
+
+  let newQ = { question, hint, is3Choice };
+
+  if (is3Choice) {
+    const c1 = document.getElementById("kagepro-add-choice1").value.trim();
+    const c2 = document.getElementById("kagepro-add-choice2").value.trim();
+    const c3 = document.getElementById("kagepro-add-choice3").value.trim();
+    if (!c1 || !c2 || !c3) {
+      alert("選択肢を3つすべて入力してください。");
+      return;
+    }
+    newQ.choices = [c1, c2, c3]; // 0番目が正解
+  } else {
+    const answer = document.getElementById("kagepro-add-answer").value.trim();
+    if (!answer) {
+      alert("解答を入力してください。");
+      return;
+    }
+    newQ.answer = answer;
+  }
+
+  try {
+    await addDoc(collection(db, KAGEPRO_COLLECTION), newQ);
+    const msgElem = document.getElementById("kagepro-admin-msg");
+    msgElem.innerText = "✅ 問題を登録しました！";
+    msgElem.className = "message success";
+    msgElem.classList.remove("hidden");
+    document.getElementById("kagepro-add-form").reset();
+    addSingleGroup.classList.remove("hidden");
+    add3ChoiceGroup.classList.add("hidden");
+  } catch (err) {
+    console.error(err);
+    alert("登録に失敗しました。");
+  }
+});
+
+// 5. カゲプロクイズスタート＆出題
+document.getElementById("kagepro-start-btn").addEventListener("click", () => {
+  if (kageproDatabase.length === 0) {
+    alert("問題が登録されていません。");
+    return;
+  }
+  kageproGameState.questions = [...kageproDatabase].sort(() => Math.random() - 0.5);
+  kageproGameState.currentIndex = 0;
+  kageproGameState.score = 0;
+
+  showScreen("kagepro-game-screen");
+  loadKageproQuestion();
+});
+
+function loadKageproQuestion() {
+  const current = kageproGameState.questions[kageproGameState.currentIndex];
+  kageproGameState.currentQ = current;
+
+  document.getElementById("kagepro-progress").innerText = `第 ${kageproGameState.currentIndex + 1} / ${kageproGameState.questions.length} 問`;
+  document.getElementById("kagepro-lyrics-box").innerHTML = `<div class="lyric-line">${current.question}</div>`;
+  document.getElementById("kagepro-hint-display").innerText = current.hint || "なし";
+
+  const textInputArea = document.getElementById("kagepro-text-input-area");
+  const choiceArea = document.getElementById("kagepro-3choice-area");
+
+  if (current.is3Choice) {
+    textInputArea.classList.add("hidden");
+    choiceArea.classList.remove("hidden");
+
+    const container = document.getElementById("kagepro-choices-container");
+    container.innerHTML = "";
+
+    // 0番目(正解)とその他2つをシャッフル
+    const choicesObj = current.choices.map((txt, idx) => ({ text: txt, isCorrect: idx === 0 }));
+    kageproGameState.shuffledChoices = choicesObj.sort(() => Math.random() - 0.5);
+
+    kageproGameState.shuffledChoices.forEach(choice => {
+      const btn = document.createElement("button");
+      btn.className = "btn kagepro-btn-primary";
+      btn.innerText = choice.text;
+      btn.onclick = () => finishKageproQuestion(choice.isCorrect);
+      container.appendChild(btn);
+    });
+
+  } else {
+    choiceArea.classList.add("hidden");
+    textInputArea.classList.remove("hidden");
+    document.getElementById("kagepro-solo-input").value = "";
+  }
+}
+
+document.getElementById("kagepro-solo-submit-btn").addEventListener("click", handleKageproAnswer);
+document.getElementById("kagepro-solo-input").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") handleKageproAnswer();
+});
+
+function handleKageproAnswer() {
+  const input = document.getElementById("kagepro-solo-input").value.trim().toLowerCase();
+  const correct = kageproGameState.currentQ.answer.trim().toLowerCase();
+  const isCorrect = input !== "" && (correct.includes(input) || input.includes(correct));
+  finishKageproQuestion(isCorrect);
+}
+
+document.getElementById("kagepro-pass-btn").addEventListener("click", () => finishKageproQuestion(false));
+document.getElementById("kagepro-pass-btn-3choice").addEventListener("click", () => finishKageproQuestion(false));
+
+function finishKageproQuestion(isCorrect) {
+  if (isCorrect) {
+    kageproGameState.score++;
+    document.getElementById("kagepro-result-status").innerText = "⭕ 正解！";
+  } else {
+    document.getElementById("kagepro-result-status").innerText = "❌ 不正解...";
+  }
+
+  const q = kageproGameState.currentQ;
+  const correctAnswerText = q.is3Choice ? q.choices[0] : q.answer;
+  document.getElementById("kagepro-detail-title").innerText = correctAnswerText;
+
+  showScreen("kagepro-answer-screen");
+}
+
+document.getElementById("kagepro-next-question-btn").addEventListener("click", () => {
+  kageproGameState.currentIndex++;
+  if (kageproGameState.currentIndex < kageproGameState.questions.length) {
+    showScreen("kagepro-game-screen");
+    loadKageproQuestion();
+  } else {
+    document.getElementById("kagepro-final-score").innerText = kageproGameState.score;
+    document.getElementById("kagepro-final-total").innerText = kageproGameState.questions.length;
+    showScreen("kagepro-final-screen");
+  }
+});
+
+document.getElementById("kagepro-back-to-menu-btn").addEventListener("click", () => showScreen("kagepro-menu-screen"));
+document.getElementById("kagepro-quit-btn").addEventListener("click", () => {
+  if (confirm("クイズを中断してメニューに戻りますか？")) {
+    showScreen("kagepro-menu-screen");
+  }
+});
+
+function renderKageproList() {
+  const container = document.getElementById("kagepro-list-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (kageproDatabase.length === 0) {
+    container.innerHTML = '<p style="color:#000; font-size:0.85rem;">登録されている問題がありません。</p>';
+    return;
+  }
+
+  kageproDatabase.forEach((q, index) => {
+    const item = document.createElement("div");
+    item.className = "song-item";
+    item.style.background = "#fff";
+    item.style.borderColor = "#000";
+    item.style.color = "#000";
+
+    const ansDisplay = q.is3Choice ? `[3択] 正解: ${q.choices[0]}` : `[入力] 答: ${q.answer}`;
+    item.innerHTML = `❓ <strong>Q. ${q.question}</strong> (${ansDisplay})`;
+
+    item.addEventListener("click", () => openKageproEditScreen(index));
+    container.appendChild(item);
+  });
+}
+
+function openKageproEditScreen(index) {
+  currentKageproEditingIndex = index;
+  const q = kageproDatabase[index];
+
+  document.getElementById("kagepro-edit-question").value = q.question;
+  document.getElementById("kagepro-edit-hint").value = q.hint || "";
+
+  if (q.is3Choice) {
+    editIs3Choice.checked = true;
+    editSingleGroup.classList.add("hidden");
+    edit3ChoiceGroup.classList.remove("hidden");
+    document.getElementById("kagepro-edit-choice1").value = q.choices ? q.choices[0] : "";
+    document.getElementById("kagepro-edit-choice2").value = q.choices ? q.choices[1] : "";
+    document.getElementById("kagepro-edit-choice3").value = q.choices ? q.choices[2] : "";
+  } else {
+    editIs3Choice.checked = false;
+    editSingleGroup.classList.remove("hidden");
+    edit3ChoiceGroup.classList.add("hidden");
+    document.getElementById("kagepro-edit-answer").value = q.answer || "";
+  }
+
+  showScreen("kagepro-edit-screen");
+}
+
+document.getElementById("kagepro-cancel-edit-btn").addEventListener("click", () => showScreen("kagepro-admin-screen"));
+
+document.getElementById("kagepro-edit-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (currentKageproEditingIndex === null) return;
+
+  const target = kageproDatabase[currentKageproEditingIndex];
+  const is3Choice = editIs3Choice.checked;
+
+  let updated = {
+    question: document.getElementById("kagepro-edit-question").value.trim(),
+    hint: document.getElementById("kagepro-edit-hint").value.trim(),
+    is3Choice
+  };
+
+  if (is3Choice) {
+    const c1 = document.getElementById("kagepro-edit-choice1").value.trim();
+    const c2 = document.getElementById("kagepro-edit-choice2").value.trim();
+    const c3 = document.getElementById("kagepro-edit-choice3").value.trim();
+    if (!c1 || !c2 || !c3) {
+      alert("選択肢を3つすべて入力してください。");
+      return;
+    }
+    updated.choices = [c1, c2, c3];
+  } else {
+    const answer = document.getElementById("kagepro-edit-answer").value.trim();
+    if (!answer) {
+      alert("解答を入力してください。");
+      return;
+    }
+    updated.answer = answer;
+  }
+
+  try {
+    if (target.id) {
+      await updateDoc(doc(db, KAGEPRO_COLLECTION, target.id), updated);
+    }
+    alert("問題を更新しました！");
+    showScreen("kagepro-admin-screen");
+  } catch (err) {
+    console.error(err);
+    alert("更新に失敗しました。");
+  }
+});
+
+const kageproDeleteModal = document.getElementById("kagepro-delete-modal");
+document.getElementById("kagepro-open-delete-modal-btn").addEventListener("click", () => {
+  kageproDeleteModal.classList.remove("hidden");
+});
+
+document.getElementById("kagepro-cancel-delete-btn").addEventListener("click", () => {
+  kageproDeleteModal.classList.add("hidden");
+});
+
+document.getElementById("kagepro-confirm-delete-btn").addEventListener("click", async () => {
+  if (currentKageproEditingIndex === null) return;
+  const target = kageproDatabase[currentKageproEditingIndex];
+
+  try {
+    if (target.id) await deleteDoc(doc(db, KAGEPRO_COLLECTION, target.id));
+    kageproDeleteModal.classList.add("hidden");
+    alert("問題を削除しました。");
+    showScreen("kagepro-admin-screen");
+  } catch (err) {
+    console.error(err);
+    alert("削除に失敗しました。");
+  }
+});
+
+// 初期化実行
 setupRealtimeSongListener();
+setupRealtimeKageproListener();
