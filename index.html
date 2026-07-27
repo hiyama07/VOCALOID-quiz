@@ -3,616 +3,564 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ボカロ歌詞クイズ & カゲプロ</title>
+  <title>ボカロ歌詞イントロクイズ</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
 
-    <!-- メニュー画面 -->
+  <div class="container">
+    <!-- 1. メニュー画面 -->
     <div id="menu-screen" class="screen active">
       <h1>ボカロ歌詞クイズ</h1>
+      
       <div class="setting-group">
-        <label for="category-select">出題カテゴリ</label>
+        <label for="category-select">カテゴリー</label>
         <select id="category-select">
-          <option value="all">全楽曲から出題</option>
-          <option value="halloffame">殿堂入り楽曲のみ</option>
-          <option value="era">年代別から出題</option>
+          <option value="all">全曲</option>
+          <option value="halloffame">殿堂入り / 伝説入り</option>
+          <option value="era">年代別</option>
         </select>
       </div>
 
-      <div class="setting-group hidden" id="era-group">
+      <div id="era-group" class="setting-group hidden">
         <label for="era-select">年代選択</label>
         <select id="era-select">
-          <option value="~2011">~2011年</option>
-          <option value="2012~2015">2012~2015年</option>
-          <option value="2016~2018">2016~2018年</option>
-          <option value="2019~2021">2019~2021年</option>
-          <option value="2022~">2022年~</option>
+          <option value="~2011">~ 2011年 (初期)</option>
+          <option value="2012~2015">2012 ~ 2015年</option>
+          <option value="2016~2018">2016 ~ 2018年</option>
+          <option value="2019~2021">2019 ~ 2021年</option>
+          <option value="2022~">2022年 ~</option>
         </select>
       </div>
 
       <div class="setting-group">
         <label for="part-select">出題パート</label>
         <select id="part-select">
-          <option value="intro">歌い出し</option>
+          <option value="intro">歌い始め</option>
           <option value="chorus">サビ</option>
           <option value="prechorus">ラスサビ前</option>
+        </select>
+      </div>
+
+      <div id="phrase-mode-group" class="setting-group">
+        <label for="phrase-mode-select">フレーズ進行</label>
+        <select id="phrase-mode-select">
+          <option value="auto">自動 (15秒ごとに進行)</option>
+          <option value="manual">手動 (ボタンで進める)</option>
         </select>
       </div>
 
       <div class="setting-group">
         <label for="player-mode-select">プレイモード</label>
         <select id="player-mode-select">
-          <option value="solo">1人モード(手打ち)</option>
-          <option value="multi">複数人モード(早押し3択)</option>
-          <option value="vs">VSモード(早押し3択)</option>
-          <option value="timeattack">50問タイムアタック(手打ち、1人用)</option>
-        </select>
-      </div>
-
-      <div class="setting-group" id="phrase-mode-group">
-        <label for="phrase-mode-select">歌詞の送り方</label>
-        <select id="phrase-mode-select">
-          <option value="auto">自動送り (15秒ごと)</option>
-          <option value="manual">手動送り</option>
+          <option value="solo">1人プレイ (入力式)</option>
+          <option value="multi">複数人モード (早押し3択)</option>
+          <option value="vs">⚔️ 2人対戦モード (横画面早押し)</option>
+          <option value="timeattack">⏱️ タイムアタック (1人・50問固定)</option>
         </select>
       </div>
 
       <div class="setting-group">
-        <label for="count-select">問題数</label>
+        <label for="count-select">出題数</label>
         <select id="count-select">
           <option value="5">5問</option>
-          <option value="10" selected>10問</option>
+          <option value="10">10問</option>
           <option value="20">20問</option>
-          <option value="30">30問</option>
+          <option value="50">50問</option>
         </select>
       </div>
 
-      <div class="ranking-box hidden" id="ranking-box">
-        <h3>🏆 50問タイムアタック ハイスコア</h3>
-        <ul class="ranking-list" id="ranking-list">
-          <!-- JSで動적生成 -->
-        </ul>
+      <div id="ranking-box" class="ranking-box hidden">
+        <h3>🏆 50問完走 TOP3 クリアタイム</h3>
+        <ul id="ranking-list" class="ranking-list"></ul>
       </div>
 
-      <button class="btn primary" id="start-btn">クイズスタート</button>
-      <button class="btn secondary" id="open-admin-btn" style="margin-top: 0.8rem;">楽曲管理メニュー</button>
-      <div id="secret-trigger-text" style="margin-top: 1.5rem; text-align: center; color: #64748b; font-size: 0.75rem; cursor: pointer; user-select: none;">Are you ready？</div>
+      <button id="start-btn" class="btn primary">ゲームスタート！</button>
+
+      <div class="admin-link-wrapper">
+        <button id="open-admin-btn" class="subtle-link-btn">管理者メニュー</button>
+      </div>
     </div>
 
-    <!-- 1人 / 複数人プレイ画面 -->
+    <!-- 2. 通常(1人 / 複数人早押し) クイズ画面 -->
     <div id="game-screen" class="screen">
       <div class="game-header">
-        <span id="question-progress" style="font-weight: bold; color: #38bdf8;">第 1 / 10 問</span>
-        <div class="timer" id="timer-display">15</div>
-        <button class="quit-btn" id="quit-btn">中断</button>
+        <span id="question-progress">第 1 / 10 問</span>
+        <div id="timer-display" class="timer">15</div>
+        <button id="quit-btn" class="quit-btn">中断</button>
       </div>
 
-      <div class="lyrics-box" id="lyrics-box">
-        <!-- 歌詞行がここに追加される -->
+      <div id="lyrics-box" class="lyrics-box"></div>
+
+      <div id="manual-next-wrapper" class="hidden">
+        <button id="next-phrase-btn" class="btn secondary">次のフレーズを表示</button>
       </div>
 
-      <div id="manual-next-wrapper" class="hidden" style="margin-bottom: 1rem;">
-        <button class="btn secondary" id="next-phrase-btn">次の歌詞を表示する</button>
-      </div>
-
-      <!-- 1人モード用回答エリア -->
-      <div id="solo-answer-input-area">
-        <div class="setting-group">
-          <input type="text" id="solo-input" placeholder="" autocomplete="off">
-        </div>
+      <!-- 1人用（文字入力） -->
+      <div id="solo-answer-input-area" class="setting-group">
+        <input type="text" id="solo-input" placeholder="曲名を入力してください" autocomplete="off">
         <div class="btn-group">
-          <button class="btn danger" id="pass-btn">パス</button>
-          <button class="btn primary" id="solo-submit-btn">回答する</button>
+          <button id="solo-submit-btn" class="btn primary">回答する</button>
+          <button id="pass-btn" class="btn secondary">パス</button>
         </div>
       </div>
 
-      <!-- 複数人モード用 早押しボタンエリア -->
-      <div id="multi-answer-buzz-area" class="hidden">
-        <button class="btn primary multi-buzz-large-btn" id="multi-buzz-btn">PUSH!! (早押し)</button>
+      <!-- 複数人用（早押しボタン） -->
+      <div id="multi-answer-buzz-area" class="setting-group hidden">
+        <button id="multi-buzz-btn" class="btn primary multi-buzz-large-btn">PUSH!! (早押し)</button>
       </div>
     </div>
 
-    <!-- VSモード 対戦画面 (横長用コンテナ) -->
+    <!-- 複数人モード用の3択モーダル -->
+    <div id="multi-choice-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3 style="margin-bottom:0.8rem;">回答を選択</h3>
+        <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
+        <div id="multi-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+      </div>
+    </div>
+
+    <!-- 3. 横画面 2人対戦クイズ画面 (VS) -->
     <div id="vs-game-screen" class="screen">
       <div class="vs-layout">
-        <!-- 1P側 -->
         <div class="vs-side vs-p1">
-          <div class="vs-player-label">PLAYER 1 (赤)</div>
-          <div class="vs-score-box">Score: <span id="vs-p1-score">0</span></div>
-          <button class="vs-buzz-btn p1-btn" id="vs-p1-btn">1P<br>PUSH!!</button>
+          <div class="vs-player-label">1P (PLAYER 1)</div>
+          <div class="vs-score-box">Pt: <span id="vs-p1-score">0</span></div>
+          <button id="vs-p1-btn" class="vs-buzz-btn p1-btn">PUSH!!</button>
         </div>
 
-        <!-- 中央: 問題エリア -->
         <div class="vs-center">
           <div class="vs-header">
-            <span id="vs-progress" style="font-weight: bold; color: #38bdf8;">第 1 / 10 問</span>
+            <span id="vs-progress">第 1 / 10 問</span>
             <div class="vs-timers-container">
-              <span class="stopwatch-text" id="vs-stopwatch-display">00:00.00</span>
-              <span class="next-phrase-text">次まで: <span id="vs-next-phrase-timer">15</span>秒</span>
+              <div class="stopwatch-text">経過時間: <span id="vs-stopwatch-display">00:00.00</span></div>
+              <div class="next-phrase-text">次のフレーズ表示まで: <span id="vs-next-phrase-timer">15</span>秒</div>
             </div>
-            <button class="quit-btn" id="vs-pause-btn">一時停止</button>
+            <button id="vs-pause-btn" class="quit-btn">一時中断</button>
           </div>
-
-          <div class="lyrics-box vs-lyrics" id="vs-lyrics-box">
-            <!-- 歌詞 -->
-          </div>
-
-          <div class="btn-group" style="margin-top: 0.5rem;">
-            <button class="btn secondary small-btn" id="next-phrase-btn-vs">次の歌詞を表示</button>
-            <button class="btn danger small-btn" id="pass-btn-vs">パス</button>
-          </div>
+          <div id="vs-lyrics-box" class="lyrics-box vs-lyrics"></div>
         </div>
 
-        <!-- 2P側 -->
         <div class="vs-side vs-p2">
-          <div class="vs-player-label">PLAYER 2 (青)</div>
-          <div class="vs-score-box">Score: <span id="vs-p2-score">0</span></div>
-          <button class="vs-buzz-btn p2-btn" id="vs-p2-btn">2P<br>PUSH!!</button>
+          <div class="vs-player-label">2P (PLAYER 2)</div>
+          <div class="vs-score-box">Pt: <span id="vs-p2-score">0</span></div>
+          <button id="vs-p2-btn" class="vs-buzz-btn p2-btn">PUSH!!</button>
+        </div>
+      </div>
+
+      <div id="vs-choice-overlay" class="modal-overlay hidden">
+        <div class="modal-content">
+          <h3 id="vs-answering-title">1P の回答</h3>
+          <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
+          <div id="vs-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+        </div>
+      </div>
+
+      <div id="vs-pause-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="text-align:center;">
+          <h3>⏸️ 一時中断中</h3>
+          <div style="margin-top: 1.5rem; display:flex; flex-direction:column; gap:0.8rem;">
+            <button id="vs-resume-btn" class="btn primary">ゲームを再開</button>
+            <button id="vs-quit-game-btn" class="btn secondary">メニューに戻る</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 正解 / 不正解 発表スクリーン -->
+    <!-- 画面回転促しポップアップモーダル -->
+    <div id="vs-orient-modal" class="modal-overlay hidden">
+      <div class="modal-content" style="text-align:center;">
+        <h2 style="font-size:1.3rem; margin-bottom:1rem;">📱 画面を横にしてください</h2>
+        <p style="font-size:0.9rem; color:#cbd5e1; margin-bottom:1.5rem;">対戦モードは端末を横向きにして2人で遊ぶモードです。</p>
+        <button id="vs-orient-ok-btn" class="btn primary">準備OK</button>
+      </div>
+    </div>
+
+    <!-- 4. 各問題の結果画面 -->
     <div id="answer-screen" class="screen">
-      <h2 id="result-status" style="margin-bottom: 1rem;">⭕ 正解！</h2>
-      
-      <div class="vs-answer-info hidden" id="vs-answer-info" style="margin-bottom: 1rem;">
-        解答プレイヤー: <strong id="vs-answer-player" style="color:#f8fafc;">1P (赤)</strong><br>
-        回答時間: <strong id="vs-answer-time" style="color:#f59e0b;">2.45 秒</strong>
+      <h2 id="result-status">⭕ 正解！</h2>
+      <div class="song-detail">
+        <h3 id="detail-title">曲名</h3>
+        <p>ボカロP: <span id="detail-producer">P名</span></p>
+        <p>投稿年: <span id="detail-year">2000年</span></p>
+        <div id="vs-answer-info" class="vs-answer-info hidden">
+          <p>早押しプレイヤー: <strong id="vs-answer-player" style="color:#38bdf8;">1P</strong></p>
+          <p>回答タイム: <strong id="vs-answer-time" style="color:#f59e0b;">1.23 秒</strong></p>
+        </div>
       </div>
-
-      <div class="admin-section" style="text-align: left; margin-bottom: 1.5rem;">
-        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.3rem;">楽曲情報</p>
-        <h3 id="detail-title" style="color: #38bdf8; font-size: 1.3rem; margin-bottom: 0.3rem; text-align: left;">初音ミクの消失</h3>
-        <p style="font-size: 0.95rem;">作詞・作曲: <span id="detail-producer" style="font-weight: bold;">cosMo@暴走P</span></p>
-        <p style="font-size: 0.95rem;">発表年: <span id="detail-year" style="font-weight: bold;">2008年</span></p>
-      </div>
-
-      <button class="btn primary" id="next-question-btn">次の問題へ</button>
+      <button id="next-question-btn" class="btn primary">次の問題へ</button>
     </div>
 
-    <!-- リザルト画面 -->
+    <!-- 5. 最終結果画面 -->
     <div id="final-screen" class="screen">
-      <h2>クイズ終了！</h2>
+      <h2>結果発表</h2>
       
-      <div id="solo-final-result">
-        <div class="final-score-text">
-          <p>正解数</p>
-          <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
-        </div>
-
-        <div class="time-attack-result hidden" id="time-attack-result">
-          <div id="new-record-badge" class="new-record-badge hidden">NEW RECORD!</div>
-          <p style="font-size: 0.85rem; color: #94a3b8;">50問クリアタイム</p>
-          <div id="final-clear-time" style="font-size: 1.5rem; font-weight: bold; color: #4ade80; font-family: monospace;">00:00.00</div>
-        </div>
+      <div id="solo-final-result" class="final-score-text">
+        <p>あなたの正解数は...</p>
+        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
       </div>
 
-      <!-- VSモード用最終結果エリア -->
-      <div id="vs-final-result" class="hidden">
-        <h3 id="vs-winner-text" style="font-size: 1.5rem; margin-bottom: 1rem;">🏆 WINNER: 1P !</h3>
+      <div id="vs-final-result" class="final-score-text hidden">
+        <h3 id="vs-winner-text" style="font-size:1.8rem; margin-bottom:1rem;">🏆 WINNER: 1P !</h3>
         <div class="vs-final-scores">
           <div class="vs-score-card p1-card">
-            <span>1P SCORE</span>
-            <strong id="vs-final-p1-score">0</strong>
+            <span>1P</span>
+            <strong><span id="vs-final-p1-score">0</span> pt</strong>
           </div>
           <div class="vs-score-card p2-card">
-            <span>2P SCORE</span>
-            <strong id="vs-final-p2-score">0</strong>
+            <span>2P</span>
+            <strong><span id="vs-final-p2-score">0</span> pt</strong>
           </div>
         </div>
       </div>
 
-      <button class="btn primary" id="back-to-menu-btn" style="margin-top: 1.5rem;">メニューに戻る</button>
+      <div id="time-attack-result" class="time-attack-result hidden">
+        <div id="new-record-badge" class="new-record-badge hidden">🎉 TOP3 ランクイン！</div>
+        <p>50問クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
+      </div>
+
+      <button id="back-to-menu-btn" class="btn primary">メニューに戻る</button>
     </div>
 
-    <!-- 管理者メニュー (楽曲管理) -->
+    <!-- 6. 管理者メニュー画面 -->
     <div id="admin-screen" class="screen">
       <div class="form-header">
-        <h2 id="admin-add-song-title">新規楽曲の追加</h2>
-        <button class="quit-btn" id="close-admin-btn">閉じる</button>
+        <h2>管理者メニュー</h2>
+        <button id="close-admin-btn" class="btn secondary small-btn">戻る</button>
       </div>
 
       <div id="admin-msg" class="message hidden"></div>
 
-      <form id="add-song-form">
-        <div class="form-group">
-          <label for="add-title">楽曲名</label>
-          <input type="text" id="add-title" required placeholder="例: 千本桜">
-        </div>
-        <div class="form-group">
-          <label for="add-producer">作詞・作曲者 (ボカロP)</label>
-          <input type="text" id="add-producer" required placeholder="例: 黒うさP">
-        </div>
-        <div class="form-group">
-          <label for="add-year">発表年</label>
-          <input type="number" id="add-year" required value="2011">
-        </div>
-        <div class="form-group checkbox-group">
-          <input type="checkbox" id="add-halloffame" checked>
-          <label for="add-halloffame">殿堂入り楽曲 (VOCALOID伝説入り)</label>
-        </div>
-
-        <div class="form-group">
-          <label for="add-intro">歌い出し (1行につき1フレーズ)</label>
-          <textarea id="add-intro" rows="3" placeholder="ボクは生まれ そして気づく&#10;所詮 ヒトの真似事だと"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="add-chorus">サビ (1行につき1フレーズ)</label>
-          <textarea id="add-chorus" rows="3" placeholder="千本桜 夜ニ紛レ&#10;君ノ声モ 届カナイヨ"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="add-prechorus">ラスサビ前 (1行につき1フレーズ)</label>
-          <textarea id="add-prechorus" rows="3" placeholder="環状線を走り抜けて..."></textarea>
-        </div>
-
-        <button class="btn primary" type="submit">Firestoreへ楽曲を追加</button>
-      </form>
+      <div class="admin-section">
+        <h3 id="admin-add-song-title">新規楽曲の追加</h3>
+        <form id="add-song-form">
+          <div class="form-group">
+            <label>タイトル *</label>
+            <input type="text" id="add-title" required>
+          </div>
+          <div class="form-group">
+            <label>ボカロP *</label>
+            <input type="text" id="add-producer" required>
+          </div>
+          <div class="form-group">
+            <label>投稿年 *</label>
+            <input type="number" id="add-year" value="2020" required>
+          </div>
+          <div class="form-group checkbox-group">
+            <label><input type="checkbox" id="add-halloffame"> 殿堂入り/伝説入り</label>
+          </div>
+          <div class="form-group">
+            <label>歌い始め歌詞 (1行ずつ改行)</label>
+            <textarea id="add-intro" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>サビ歌詞 (1行ずつ改行)</label>
+            <textarea id="add-chorus" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>ラスサビ前歌詞 (1行ずつ改行)</label>
+            <textarea id="add-prechorus" rows="3"></textarea>
+          </div>
+          <button type="submit" class="btn primary">楽曲をデータベースへ登録</button>
+        </form>
+      </div>
 
       <hr class="divider">
 
       <div class="admin-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
-          <h3 style="margin-bottom: 0;">登録楽曲一覧 (編集・削除)</h3>
-          <select id="admin-sort-select" style="width: 140px; padding: 0.3rem; font-size: 0.8rem;">
-            <option value="default">登録順</option>
-            <option value="title">楽曲名順</option>
+        <h3>登録済み楽曲一覧 (初期楽曲含む)</h3>
+        <p style="font-size:0.85rem; color:#94a3b8;">タップすると詳細画面で編集・削除ができます</p>
+        
+        <div class="setting-group" style="margin-top: 0.8rem; margin-bottom: 0.8rem;">
+          <label for="admin-sort-select" style="font-size: 0.85rem;">並べ替え</label>
+          <select id="admin-sort-select" style="padding: 0.4rem; font-size: 0.85rem;">
+            <option value="default">登録順 (標準)</option>
+            <option value="title">五十音順 (タイトル)</option>
             <option value="producer">ボカロP順</option>
           </select>
         </div>
-        <div class="song-list-container" id="song-list-container">
-          <!-- JSで動的生成 -->
-        </div>
+
+        <div id="song-list-container" class="song-list-container"></div>
       </div>
-      <div style="margin-top: 1.5rem; text-align: center; color: #64748b; font-size: 0.75rem;">Are you ready？</div>
+
+      <div style="text-align: center; margin-top: 1.5rem;">
+        <span id="secret-trigger-text" style="font-size: 0.7rem; color: #475569; cursor: pointer; user-select: none;">Are you ready？</span>
+      </div>
     </div>
 
-    <!-- 楽曲編集画面 -->
+    <!-- 7. 楽曲編集専用画面 -->
     <div id="edit-song-screen" class="screen">
       <div class="form-header">
-        <h2>楽曲の編集</h2>
-        <button class="quit-btn" id="cancel-edit-btn">戻る</button>
+        <h2>楽曲情報の編集</h2>
+        <button id="cancel-edit-btn" class="btn secondary small-btn">キャンセル</button>
       </div>
 
-      <form id="edit-song-form">
+      <form id="edit-song-form" class="admin-section">
         <div class="form-group">
-          <label for="edit-title">楽曲名</label>
+          <label>タイトル *</label>
           <input type="text" id="edit-title" required>
         </div>
         <div class="form-group">
-          <label for="edit-producer">作詞・作曲者 (ボカロP)</label>
+          <label>ボカロP *</label>
           <input type="text" id="edit-producer" required>
         </div>
         <div class="form-group">
-          <label for="edit-year">発表年</label>
+          <label>投稿年 *</label>
           <input type="number" id="edit-year" required>
         </div>
         <div class="form-group checkbox-group">
-          <input type="checkbox" id="edit-halloffame">
-          <label for="edit-halloffame">殿堂入り楽曲</label>
+          <label><input type="checkbox" id="edit-halloffame"> 殿堂入り/伝説入り</label>
         </div>
-
         <div class="form-group">
-          <label for="edit-intro">歌い出し</label>
+          <label>歌い始め歌詞 (1行ずつ改行)</label>
           <textarea id="edit-intro" rows="3"></textarea>
         </div>
         <div class="form-group">
-          <label for="edit-chorus">サビ</label>
+          <label>サビ歌詞 (1行ずつ改行)</label>
           <textarea id="edit-chorus" rows="3"></textarea>
         </div>
         <div class="form-group">
-          <label for="edit-prechorus">ラスサビ前</label>
+          <label>ラスサビ前歌詞 (1行ずつ改行)</label>
           <textarea id="edit-prechorus" rows="3"></textarea>
         </div>
 
-        <div class="btn-group" style="margin-top: 1rem;">
-          <button class="btn danger" type="button" id="open-delete-modal-btn">削除</button>
-          <button class="btn primary" type="submit">更新を保存</button>
+        <div class="btn-group" style="margin-top: 1.5rem;">
+          <button type="submit" class="btn primary">変更を保存</button>
+          <button type="button" id="open-delete-modal-btn" class="btn danger">この楽曲を削除</button>
         </div>
       </form>
     </div>
 
-  </div>
+    <!-- ================= 隠し：カゲロウプロジェクトクイズ関連画面 ================= -->
 
-  <!-- 複数人モード用 3択選択モーダル -->
-  <div id="multi-choice-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <h3 style="margin-bottom: 1rem;">正解だと思う楽曲を選べ！</h3>
-      <div id="multi-choices-container" style="display: flex; flex-direction: column; gap: 0.8rem;">
-        <!-- 動的生成 -->
+    <!-- 秘匿パスワード入力画面 -->
+    <div id="kagepro-auth-screen" class="screen">
+      <div class="kagepro-auth-box">
+        <p style="font-family: monospace; color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.5rem;">pass</p>
+        <div class="kagepro-search-bar">
+          <input type="password" id="kagepro-pass-input" placeholder="パスワードを入力" autocomplete="off">
+          <button id="kagepro-go-btn" class="btn primary" style="width: auto; padding: 0.75rem 1.2rem;">GO</button>
+        </div>
+        <p id="kagepro-auth-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem;" class="hidden">パスワードが違います</p>
+        <button id="kagepro-auth-back" class="subtle-link-btn" style="margin-top: 2rem;">戻る</button>
       </div>
     </div>
-  </div>
 
-  <!-- VSモード 画面向き・対戦前モーダル -->
-  <div id="vs-orient-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="text-align: center;">
-      <h3 style="margin-bottom: 1rem;">VSモードの準備</h3>
-      <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 1.5rem; line-height: 1.5;">
-        端末を横向きにし、左右に分かれて早押しを行ってください。<br>準備ができたらスタートボタンを押してください。
-      </p>
-      <button class="btn primary" id="vs-orient-ok-btn">対戦開始！</button>
-    </div>
-  </div>
+    <!-- カゲロウプロジェクトクイズ ホーム画面 -->
+    <div id="kagepro-menu-screen" class="screen kagepro-theme">
+      <!-- 赤の装飾（六角形・三角形） -->
+      <svg class="kagepro-shape shape-hexagon pos1" viewBox="0 0 100 100"><polygon points="50 3, 93 25, 93 75, 50 97, 7 75, 7 25" /></svg>
+      <svg class="kagepro-shape shape-triangle pos2" viewBox="0 0 100 100"><polygon points="50 15, 90 85, 10 85" /></svg>
+      <svg class="kagepro-shape shape-hexagon pos3" viewBox="0 0 100 100"><polygon points="50 3, 93 25, 93 75, 50 97, 7 75, 7 25" /></svg>
+      <svg class="kagepro-shape shape-triangle pos4" viewBox="0 0 100 100"><polygon points="50 15, 90 85, 10 85" /></svg>
 
-  <!-- VSモード 一時停止モーダル -->
-  <div id="vs-pause-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="text-align: center;">
-      <h3 style="margin-bottom: 1.5rem;">一時停止中</h3>
-      <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-        <button class="btn primary" id="vs-resume-btn">ゲームに戻る</button>
-        <button class="btn danger" id="vs-quit-game-btn">メニューに戻る</button>
+      <div class="kagepro-menu-content">
+        <h1 class="kagepro-title">カゲロウプロジェクトクイズ</h1>
+        
+        <div style="margin: 2rem 0;">
+          <button id="kagepro-start-btn" class="btn kagepro-btn-primary">クイズスタート</button>
+        </div>
+
+        <div style="margin-top: 3rem; text-align: center;">
+          <button id="kagepro-open-admin-btn" class="subtle-link-btn kagepro-subtle-btn">管理者メニュー</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- 楽曲削除確認モーダル -->
-  <div id="delete-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="text-align: center;">
-      <h3 style="margin-bottom: 1rem; color: #f87171;">楽曲の削除</h3>
-      <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 1.5rem;">
-        「<span id="delete-target-title" style="color:#fff; font-weight:bold;"></span>」を本当に削除しますか？<br>この操作は元に戻せません。
-      </p>
-      <div class="btn-group">
-        <button class="btn secondary" id="cancel-delete-btn">キャンセル</button>
-        <button class="btn danger" id="confirm-delete-btn">削除する</button>
+    <!-- カゲプロ 管理者パスワード入力モーダル -->
+    <div id="kagepro-admin-auth-modal" class="modal-overlay hidden">
+      <div class="modal-content" style="background:#0f172a; border: 2px solid #ef4444;">
+        <h3 style="color:#ef4444; margin-bottom:1rem;">🔒 管理者認証</h3>
+        <p style="font-size:0.85rem; color:#cbd5e1; margin-bottom:1rem;">パスワードを入力してください</p>
+        <input type="password" id="kagepro-admin-pass-input" placeholder="パスワード" style="margin-bottom:1rem;">
+        <p id="kagepro-admin-auth-error" style="color:#ef4444; font-size:0.8rem; margin-bottom:1rem;" class="hidden">パスワードが正しくありません</p>
+        <div class="btn-group">
+          <button id="kagepro-admin-auth-submit" class="btn primary">認証</button>
+          <button id="kagepro-admin-auth-cancel" class="btn secondary">キャンセル</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ================= カゲロウプロジェクト隠しページ用HTML ================= -->
-  
-  <!-- 1. パスワード認証画面 (0815) -->
-  <div id="kagepro-auth-screen" class="screen kagepro-theme">
-    <svg class="kagepro-shape shape-hexagon pos1" viewBox="0 0 100 100"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25"/></svg>
-    <svg class="kagepro-shape shape-triangle pos2" viewBox="0 0 100 100"><polygon points="50,0 100,100 0,100"/></svg>
-    <svg class="kagepro-shape shape-triangle pos3" viewBox="0 0 100 100"><polygon points="50,0 100,100 0,100"/></svg>
-    <svg class="kagepro-shape shape-hexagon pos4" viewBox="0 0 100 100"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25"/></svg>
-
-    <div class="container kagepro-menu-content kagepro-auth-box">
-      <h2 class="kagepro-title" style="margin-bottom: 1.5rem;">ACCESS AUTH</h2>
-      <div class="setting-group" style="width: 100%; max-width: 280px;">
-        <input type="password" id="kagepro-pass-input" placeholder="pass" autocomplete="off" style="background:#fff; color:#000; border:2px solid #000; font-weight:bold; text-align:center;">
-      </div>
-      <div id="kagepro-auth-error" class="message error hidden" style="margin-bottom: 1rem; width: 100%; max-width: 280px;">認証エラー</div>
-      <div style="display: flex; gap: 0.5rem; width: 100%; max-width: 280px;">
-        <button class="btn secondary" id="kagepro-auth-back" style="background:#fff; color:#000; border:2px solid #000; font-weight:bold;">戻る</button>
-        <button class="btn kagepro-btn-primary" id="kagepro-go-btn">GO</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. カゲプロ メニュー画面 -->
-  <div id="kagepro-menu-screen" class="screen kagepro-theme">
-    <svg class="kagepro-shape shape-hexagon pos1" viewBox="0 0 100 100"><polygon points="50,0 100,25 100,75 50,100 0,75 0,25"/></svg>
-    <svg class="kagepro-shape shape-triangle pos2" viewBox="0 0 100 100"><polygon points="50,0 100,100 0,100"/></svg>
-    <svg class="kagepro-shape shape-triangle pos3" viewBox="0 0 100 100"><polygon points="50,0 100,100 0,100"/></svg>
-
-    <div class="container kagepro-menu-content">
-      <h1 class="kagepro-title">カゲロウプロジェクトクイズ</h1>
-      
-      <div style="margin: 2rem 0; display: flex; flex-direction: column; gap: 1rem;">
-        <button class="btn kagepro-btn-primary" id="kagepro-start-btn" style="padding: 1rem; font-size: 1.2rem;">クイズをはじめる</button>
-        <button class="btn" id="kagepro-open-admin-btn" style="background:#fff; color:#000; border:2px solid #000; font-weight:bold; box-shadow:3px 3px 0px #000;">問題管理メニュー</button>
+    <!-- カゲロウプロジェクトクイズ プレイ画面 -->
+    <div id="kagepro-game-screen" class="screen kagepro-theme">
+      <div class="game-header">
+        <span id="kagepro-progress" style="color: #000; font-weight: bold;">第 1 / 5 問</span>
+        <button id="kagepro-quit-btn" class="quit-btn" style="border-color: #000; color: #000; font-weight: bold;">中断</button>
       </div>
 
-      <button class="subtle-link-btn kagepro-subtle-btn" onclick="showScreen('menu-screen')">通常モードに戻る</button>
-    </div>
-  </div>
+      <div id="kagepro-lyrics-box" class="lyrics-box" style="background-color: rgba(255,255,255,0.85); border: 2px solid #000; color: #000;"></div>
 
-  <!-- 3. カゲプロ 管理者認証モーダル (0430) -->
-  <div id="kagepro-admin-auth-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="background:#fff; border:3px solid #000; color:#000;">
-      <h3 style="color:#000; margin-bottom: 1rem;">ADMIN AUTH</h3>
-      <div class="setting-group">
-        <input type="password" id="kagepro-admin-pass-input" placeholder="Pass" style="background:#f1f5f9; color:#000; border:2px solid #000;">
+      <!-- 手動表示用のヒントエリア -->
+      <div class="setting-group" style="background: rgba(255,255,255,0.7); padding: 0.8rem; border-radius: 8px; border: 1px solid #000;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+          <span style="font-size: 0.85rem; color: #b91c1c; font-weight: bold;">💡 ヒント:</span>
+          <button id="kagepro-show-hint-btn" class="btn small-btn" style="background: #dc2626; color: #fff; width: auto; padding: 0.3rem 0.8rem; font-size: 0.8rem;">ヒントを見る</button>
+        </div>
+        <div id="kagepro-hint-display" style="font-size: 0.95rem; color: #000; font-weight: bold; margin-top: 0.4rem;" class="hidden"></div>
       </div>
-      <div id="kagepro-admin-auth-error" class="message error hidden" style="margin-bottom: 1rem;">パスワードが違います</div>
-      <div class="btn-group">
-        <button class="btn secondary" id="kagepro-admin-auth-cancel" style="background:#e2e8f0; color:#000; border:2px solid #000;">キャンセル</button>
-        <button class="btn kagepro-btn-primary" id="kagepro-admin-auth-submit">認証</button>
+
+      <!-- 入力式エリア -->
+      <div id="kagepro-text-input-area" class="setting-group">
+        <input type="text" id="kagepro-solo-input" placeholder="答えを入力してください" autocomplete="off" style="background: #fff; color: #000; border: 2px solid #000;">
+        <div class="btn-group">
+          <button id="kagepro-solo-submit-btn" class="btn kagepro-btn-primary">回答する</button>
+          <button id="kagepro-pass-btn" class="btn secondary" style="background: #e2e8f0; color: #000; border: 1px solid #000;">パス</button>
+        </div>
+      </div>
+
+      <!-- 3択式エリア -->
+      <div id="kagepro-3choice-area" class="setting-group hidden">
+        <div id="kagepro-choices-container" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
+        <button id="kagepro-pass-btn-3choice" class="btn secondary" style="background: #e2e8f0; color: #000; border: 1px solid #000; margin-top: 0.5rem;">パス</button>
       </div>
     </div>
-  </div>
 
-  <!-- 4. カゲプロ 管理者画面 (問題登録・一覧) -->
-  <div id="kagepro-admin-screen" class="screen kagepro-theme">
-    <div class="container kagepro-menu-content">
+    <!-- カゲロウプロジェクトクイズ 結果画面 -->
+    <div id="kagepro-answer-screen" class="screen kagepro-theme">
+      <h2 id="kagepro-result-status" style="color: #000; font-weight: bold;">⭕ 正解！</h2>
+      <div class="song-detail" style="background: rgba(255,255,255,0.85); border: 2px solid #000; border-radius: 8px; padding: 1rem; margin: 1.5rem 0;">
+        <h3 id="kagepro-detail-title" style="color: #000; font-weight: bold;">曲名</h3>
+        <p style="color: #334155; margin-top: 0.5rem; font-weight: bold;">正解の答え</p>
+      </div>
+      <button id="kagepro-next-question-btn" class="btn kagepro-btn-primary">次の問題へ</button>
+    </div>
+
+    <!-- カゲロウプロジェクトクイズ 最終結果画面 -->
+    <div id="kagepro-final-screen" class="screen kagepro-theme">
+      <h2 style="color: #000; font-weight: bold;">結果発表</h2>
+      <div class="final-score-text">
+        <p style="color: #000; font-weight: bold;">あなたの成績は...</p>
+        <div class="highlight-score" style="color: #dc2626;"><span id="kagepro-final-score">0</span> / <span id="kagepro-final-total">5</span></div>
+      </div>
+      <button id="kagepro-back-to-menu-btn" class="btn kagepro-btn-primary">メニューに戻る</button>
+    </div>
+
+    <!-- カゲロウプロジェクト 管理者メニュー画面 -->
+    <div id="kagepro-admin-screen" class="screen kagepro-theme">
       <div class="form-header">
-        <h2 class="kagepro-title" style="font-size: 1.3rem; margin-bottom: 0;">カゲプロ問題管理</h2>
-        <button class="quit-btn" id="kagepro-close-admin-btn" style="background:#fff; color:#000; border:2px solid #000;">閉じる</button>
+        <h2 style="color: #000; font-size: 1.2rem; font-weight: bold;">カゲプロ管理者メニュー</h2>
+        <button id="kagepro-close-admin-btn" class="btn secondary small-btn" style="background: #e2e8f0; color: #000; border: 1px solid #000;">戻る</button>
       </div>
 
       <div id="kagepro-admin-msg" class="message hidden"></div>
 
-      <form id="kagepro-add-form" style="background:#fff; padding: 1rem; border-radius: 8px; border: 2px solid #000; box-shadow: 3px 3px 0px #000; margin-top: 1rem;">
-        <div class="form-group">
-          <label style="color:#000; font-weight:bold;">問題文</label>
-          <input type="text" id="kagepro-add-question" required style="background:#f1f5f9; color:#000; border:2px solid #000;">
-        </div>
-
-        <div class="form-group">
-          <label style="color:#000; font-weight:bold;">ヒント (任意)</label>
-          <input type="text" id="kagepro-add-hint" placeholder="例: アイドルで、アヤノの妹" style="background:#f1f5f9; color:#000; border:2px solid #000;">
-        </div>
-
-        <div class="form-group checkbox-group">
-          <input type="checkbox" id="kagepro-add-is-3choice" style="width: 20px; height: 20px;">
-          <label style="color:#000; font-weight:bold;">3択問題にする</label>
-        </div>
-
-        <div class="form-group" id="kagepro-add-single-answer-group">
-          <label style="color:#000; font-weight:bold;">解答 (文字入力)</label>
-          <input type="text" id="kagepro-add-answer" placeholder="例: 如月モモ" style="background:#f1f5f9; color:#000; border:2px solid #000;">
-        </div>
-
-        <div class="hidden" id="kagepro-add-3choice-group">
-          <p style="font-size: 0.8rem; color:#dc2626; font-weight:bold; margin-bottom:0.4rem;">※1つ目の選択肢が正解になります</p>
+      <div class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
+        <h3 style="color: #000; font-weight: bold;">新規問題の追加</h3>
+        <form id="kagepro-add-form">
           <div class="form-group">
-            <label style="color:#000;">選択肢 1 (正解)</label>
-            <input type="text" id="kagepro-add-choice1" style="background:#f1f5f9; color:#000; border:2px solid #000;">
+            <label style="color: #000; font-weight: bold;">問題 (歌詞など) *</label>
+            <textarea id="kagepro-add-question" rows="3" required style="background: #fff; border-color: #000; color:#000;"></textarea>
           </div>
+
+          <div class="form-group checkbox-group">
+            <label style="color: #000; font-weight: bold;"><input type="checkbox" id="kagepro-add-is-3choice"> 3択問題にする</label>
+          </div>
+
+          <!-- 入力式用正解欄 -->
+          <div id="kagepro-add-single-answer-group" class="form-group">
+            <label style="color: #000; font-weight: bold;">解答 *</label>
+            <input type="text" id="kagepro-add-answer" style="background: #fff; border-color: #000; color:#000;">
+          </div>
+
+          <!-- 3択式用選択肢欄 -->
+          <div id="kagepro-add-3choice-group" class="form-group hidden">
+            <label style="color: #000; font-weight: bold;">① 正解の入力 *</label>
+            <input type="text" id="kagepro-add-choice1" placeholder="正解を入力" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
+            <label style="color: #000; font-weight: bold;">② 不正解選択肢1 *</label>
+            <input type="text" id="kagepro-add-choice2" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
+            <label style="color: #000; font-weight: bold;">③ 不正解選択肢2 *</label>
+            <input type="text" id="kagepro-add-choice3" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000;">
+          </div>
+
           <div class="form-group">
-            <label style="color:#000;">選択肢 2 (不正解)</label>
-            <input type="text" id="kagepro-add-choice2" style="background:#f1f5f9; color:#000; border:2px solid #000;">
+            <label style="color: #000; font-weight: bold;">ヒント *</label>
+            <input type="text" id="kagepro-add-hint" required style="background: #fff; border-color: #000; color:#000;">
           </div>
-          <div class="form-group">
-            <label style="color:#000;">選択肢 3 (不正解)</label>
-            <input type="text" id="kagepro-add-choice3" style="background:#f1f5f9; color:#000; border:2px solid #000;">
-          </div>
-        </div>
+          <button type="submit" class="btn kagepro-btn-primary">問題を登録</button>
+        </form>
+      </div>
 
-        <button class="btn kagepro-btn-primary" type="submit" style="margin-top: 0.5rem;">問題を登録</button>
-      </form>
+      <hr class="divider" style="border-color: #000;">
 
-      <hr class="divider" style="border-color:#000;">
-
-      <div class="admin-section" style="background:#fff; border: 2px solid #000; box-shadow: 3px 3px 0px #000;">
-        <h3 style="color:#000; font-weight:bold;">登録問題一覧 (編集・削除)</h3>
-        <div class="song-list-container" id="kagepro-list-container">
-          <!-- 動的生成 -->
-        </div>
+      <div class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
+        <h3 style="color: #000; font-weight: bold;">登録済み問題一覧</h3>
+        <p style="font-size:0.85rem; color:#334155;">タップすると編集・削除ができます</p>
+        <div id="kagepro-list-container" class="song-list-container"></div>
       </div>
     </div>
-  </div>
 
-  <!-- 5. カゲプロ 問題編集画面 -->
-  <div id="kagepro-edit-screen" class="screen kagepro-theme">
-    <div class="container kagepro-menu-content">
+    <!-- カゲロウプロジェクト 問題編集画面 -->
+    <div id="kagepro-edit-screen" class="screen kagepro-theme">
       <div class="form-header">
-        <h2 class="kagepro-title" style="font-size: 1.3rem; margin-bottom: 0;">問題の編集</h2>
-        <button class="quit-btn" id="kagepro-cancel-edit-btn" style="background:#fff; color:#000; border:2px solid #000;">戻る</button>
+        <h2 style="color: #000; font-weight: bold;">問題情報の編集</h2>
+        <button id="kagepro-cancel-edit-btn" class="btn secondary small-btn" style="background: #e2e8f0; color:#000; border:1px solid #000;">キャンセル</button>
       </div>
 
-      <form id="kagepro-edit-form" style="background:#fff; padding: 1rem; border-radius: 8px; border: 2px solid #000; box-shadow: 3px 3px 0px #000;">
+      <form id="kagepro-edit-form" class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
         <div class="form-group">
-          <label style="color:#000; font-weight:bold;">問題文</label>
-          <input type="text" id="kagepro-edit-question" required style="background:#f1f5f9; color:#000; border:2px solid #000;">
-        </div>
-
-        <div class="form-group">
-          <label style="color:#000; font-weight:bold;">ヒント</label>
-          <input type="text" id="kagepro-edit-hint" style="background:#f1f5f9; color:#000; border:2px solid #000;">
+          <label style="color: #000; font-weight: bold;">問題 *</label>
+          <textarea id="kagepro-edit-question" rows="3" required style="background: #fff; border-color: #000; color:#000;"></textarea>
         </div>
 
         <div class="form-group checkbox-group">
-          <input type="checkbox" id="kagepro-edit-is-3choice" style="width: 20px; height: 20px;">
-          <label style="color:#000; font-weight:bold;">3択問題にする</label>
+          <label style="color: #000; font-weight: bold;"><input type="checkbox" id="kagepro-edit-is-3choice"> 3択問題にする</label>
         </div>
 
-        <div class="form-group" id="kagepro-edit-single-answer-group">
-          <label style="color:#000; font-weight:bold;">解答</label>
-          <input type="text" id="kagepro-edit-answer" style="background:#f1f5f9; color:#000; border:2px solid #000;">
+        <!-- 入力式用正解欄 -->
+        <div id="kagepro-edit-single-answer-group" class="form-group">
+          <label style="color: #000; font-weight: bold;">解答 *</label>
+          <input type="text" id="kagepro-edit-answer" style="background: #fff; border-color: #000; color:#000;">
         </div>
 
-        <div class="hidden" id="kagepro-edit-3choice-group">
-          <p style="font-size: 0.8rem; color:#dc2626; font-weight:bold; margin-bottom:0.4rem;">※1つ目の選択肢が正解になります</p>
-          <div class="form-group">
-            <label style="color:#000;">選択肢 1 (正解)</label>
-            <input type="text" id="kagepro-edit-choice1" style="background:#f1f5f9; color:#000; border:2px solid #000;">
-          </div>
-          <div class="form-group">
-            <label style="color:#000;">選択肢 2</label>
-            <input type="text" id="kagepro-edit-choice2" style="background:#f1f5f9; color:#000; border:2px solid #000;">
-          </div>
-          <div class="form-group">
-            <label style="color:#000;">選択肢 3</label>
-            <input type="text" id="kagepro-edit-choice3" style="background:#f1f5f9; color:#000; border:2px solid #000;">
-          </div>
+        <!-- 3択式用選択肢欄 -->
+        <div id="kagepro-edit-3choice-group" class="form-group hidden">
+          <label style="color: #000; font-weight: bold;">① 正解の入力 *</label>
+          <input type="text" id="kagepro-edit-choice1" placeholder="正解を入力" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
+          <label style="color: #000; font-weight: bold;">② 不正解選択肢1 *</label>
+          <input type="text" id="kagepro-edit-choice2" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
+          <label style="color: #000; font-weight: bold;">③ 不正解選択肢2 *</label>
+          <input type="text" id="kagepro-edit-choice3" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000;">
         </div>
 
-        <div class="btn-group" style="margin-top: 1rem;">
-          <button class="btn danger" type="button" id="kagepro-open-delete-modal-btn">削除</button>
-          <button class="btn kagepro-btn-primary" type="submit">更新を保存</button>
+        <div class="form-group">
+          <label style="color: #000; font-weight: bold;">ヒント *</label>
+          <input type="text" id="kagepro-edit-hint" required style="background: #fff; border-color: #000; color:#000;">
+        </div>
+
+        <div class="btn-group" style="margin-top: 1.5rem;">
+          <button type="submit" class="btn kagepro-btn-primary">変更を保存</button>
+          <button type="button" id="kagepro-open-delete-modal-btn" class="btn danger">この問題を削除</button>
         </div>
       </form>
     </div>
+
   </div>
 
-  <!-- 6. カゲプロ クイズプレイ画面 -->
-  <div id="kagepro-game-screen" class="screen kagepro-theme">
-    <div class="container kagepro-menu-content">
-      <div class="game-header">
-        <span id="kagepro-progress" style="font-weight: bold; color: #000;">第 1 / 5 問</span>
-        <button class="quit-btn" id="kagepro-quit-btn" style="background:#fff; color:#000; border:2px solid #000;">中断</button>
-      </div>
-
-      <div class="lyrics-box" id="kagepro-lyrics-box" style="background:#fff; border:2px solid #000; color:#000; font-weight:bold;">
-        <!-- 問題文 -->
-      </div>
-
-      <div class="hint-container">
-        <button class="hint-toggle-btn" id="kagepro-show-hint-btn">💡 ヒントを見る</button>
-        <div class="hint-box hidden" id="kagepro-hint-display">
-          <div class="hint-label">HINT</div>
-          <div class="hint-content"></div>
-        </div>
-      </div>
-
-      <div id="kagepro-text-input-area">
-        <div class="setting-group">
-          <input type="text" id="kagepro-solo-input" placeholder="" autocomplete="off" style="background:#fff; color:#000; border:2px solid #000;">
-        </div>
-        <div class="btn-group">
-          <button class="btn" id="kagepro-pass-btn" style="background:#fff; color:#000; border:2px solid #000; font-weight:bold; box-shadow:2px 2px 0px #000;">パス</button>
-          <button class="btn kagepro-btn-primary" id="kagepro-solo-submit-btn">回答する</button>
-        </div>
-      </div>
-
-      <div id="kagepro-3choice-area" class="hidden">
-        <div id="kagepro-choices-container" style="display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1rem;">
-          <!-- 選択肢ボタン群 -->
-        </div>
-        <button class="btn" id="kagepro-pass-btn-3choice" style="background:#fff; color:#000; border:2px solid #000; font-weight:bold; box-shadow:2px 2px 0px #000;">パス</button>
+  <!-- 8. 削除確認ポップアップ (モーダル) -->
+  <div id="delete-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3>⚠️ 楽曲の削除</h3>
+      <p>本当に「<span id="delete-target-title"></span>」を削除しますか？</p>
+      <p style="font-size:0.85rem; color:#f87171;">※この操作は取り消せません。</p>
+      <div class="modal-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button id="cancel-delete-btn" class="btn secondary">キャンセル</button>
+        <button id="confirm-delete-btn" class="btn danger">削除する</button>
       </div>
     </div>
   </div>
 
-  <!-- 7. カゲプロ 正解・不正解発表画面 -->
-  <div id="kagepro-answer-screen" class="screen kagepro-theme">
-    <div class="container kagepro-menu-content" style="text-align: center;">
-      <h2 id="kagepro-result-status" style="margin-bottom: 1rem; font-size: 2rem;">⭕ 正解！</h2>
-      
-      <div class="admin-section" style="text-align: left; margin-bottom: 1.5rem; background:#fff; border:2px solid #000; box-shadow:3px 3px 0px #000;">
-        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.3rem;">正解は...</p>
-        <h3 id="kagepro-detail-title" style="color: #000; font-size: 1.4rem; margin-bottom: 0; text-align: left; font-weight:900;">如月モモ</h3>
-      </div>
-
-      <button class="btn kagepro-btn-primary" id="kagepro-next-question-btn">次の問題へ</button>
-    </div>
-  </div>
-
-  <!-- 8. カゲプロ リザルト画面 -->
-  <div id="kagepro-final-screen" class="screen kagepro-theme">
-    <div class="container kagepro-menu-content" style="text-align: center;">
-      <h2 class="kagepro-title">クイズ終了！</h2>
-      
-      <div class="final-score-text">
-        <p style="color:#000; font-weight:bold;">正解数</p>
-        <div class="highlight-score" style="color:#dc2626;"><span id="kagepro-final-score">0</span> / <span id="kagepro-final-total">5</span></div>
-      </div>
-
-      <button class="btn kagepro-btn-primary" id="kagepro-back-to-menu-btn" style="margin-top: 1.5rem;">メニューに戻る</button>
-    </div>
-  </div>
-
-  <!-- カゲプロ 問題削除確認モーダル -->
+  <!-- カゲプロ削除確認モーダル -->
   <div id="kagepro-delete-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="background:#fff; border:3px solid #000; color:#000; text-align: center;">
-      <h3 style="margin-bottom: 1rem; color: #dc2626;">問題の削除</h3>
-      <p style="font-size: 0.9rem; color: #000; margin-bottom: 1.5rem; font-weight:bold;">
-        この問題を本当に削除しますか？<br>この操作は元に戻せません。
-      </p>
-      <div class="btn-group">
-        <button class="btn secondary" id="kagepro-cancel-delete-btn" style="background:#e2e8f0; color:#000; border:2px solid #000;">キャンセル</button>
-        <button class="btn danger" id="kagepro-confirm-delete-btn">削除する</button>
+    <div class="modal-content" style="background: #fff; border: 2px solid #dc2626;">
+      <h3 style="color: #dc2626;">⚠️ 問題の削除</h3>
+      <p style="color: #000; font-weight: bold;">本当にこの問題を削除しますか？</p>
+      <div class="modal-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button id="kagepro-cancel-delete-btn" class="btn secondary">キャンセル</button>
+        <button id="kagepro-confirm-delete-btn" class="btn danger">削除する</button>
       </div>
     </div>
   </div>
 
-  <!-- 外部スクリプトの読み込み -->
-  <script type="module" src="app.js"></script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
