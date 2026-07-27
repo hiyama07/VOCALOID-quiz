@@ -78,7 +78,7 @@ const defaultKageproQuestions = [
     question: "「目を眩ませる」能力を持つ、カゲプロの登場人物は誰？",
     is3Choice: false,
     answer: "如月モモ",
-    hint: "アイドルで、アヤトシの妹"
+    hint: "アイドルで、アヤノの妹"
   },
   {
     question: "「サマータイムレコード」の舞台となっている夏の日の思い出の場所は何年前？",
@@ -1073,13 +1073,40 @@ document.getElementById("kagepro-start-btn").addEventListener("click", () => {
   loadKageproQuestion();
 });
 
+// ヒント表示ボタンのイベントリスナー設定
+const showHintBtn = document.getElementById("kagepro-show-hint-btn");
+if (showHintBtn) {
+  showHintBtn.addEventListener("click", () => {
+    const hintDisplay = document.getElementById("kagepro-hint-display");
+    const hintText = kageproGameState.currentQ?.hint;
+    if (hintText && hintText.trim() !== "") {
+      hintDisplay.innerText = hintText;
+    } else {
+      hintDisplay.innerText = "ヒントはありません";
+    }
+    hintDisplay.classList.remove("hidden");
+    showHintBtn.classList.add("hidden");
+  });
+}
+
 function loadKageproQuestion() {
   const current = kageproGameState.questions[kageproGameState.currentIndex];
   kageproGameState.currentQ = current;
 
   document.getElementById("kagepro-progress").innerText = `第 ${kageproGameState.currentIndex + 1} / ${kageproGameState.questions.length} 問`;
   document.getElementById("kagepro-lyrics-box").innerHTML = `<div class="lyric-line">${current.question}</div>`;
-  document.getElementById("kagepro-hint-display").innerText = current.hint || "なし";
+
+  // ヒント表示初期化（初期状態は非表示）
+  const hintDisplay = document.getElementById("kagepro-hint-display");
+  const showHintBtn = document.getElementById("kagepro-show-hint-btn");
+  if (hintDisplay) {
+    hintDisplay.innerText = "";
+    hintDisplay.classList.add("hidden");
+  }
+  if (showHintBtn) {
+    showHintBtn.classList.remove("hidden");
+    showHintBtn.disabled = false;
+  }
 
   const textInputArea = document.getElementById("kagepro-text-input-area");
   const choiceArea = document.getElementById("kagepro-3choice-area");
