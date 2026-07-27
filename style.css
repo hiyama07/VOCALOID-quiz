@@ -518,6 +518,72 @@ select:disabled {
   display: none !important;
 }
 
+/* ================= ヒント手動表示用スタイル (追加領域) ================= */
+.hint-container {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hint-toggle-btn {
+  background-color: #134e4a;
+  color: #2dd4bf;
+  border: 1px solid #14b8a6;
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.hint-toggle-btn:hover {
+  background-color: #0f766e;
+  color: #ccfbf1;
+}
+
+.hint-toggle-btn:disabled {
+  background-color: #334155;
+  color: #64748b;
+  border-color: #475569;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.hint-box {
+  background-color: #0f172a;
+  border: 1px dashed #14b8a6;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+  color: #2dd4bf;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.hint-box.hidden {
+  display: none !important;
+}
+
+.hint-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #5eead4;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hint-content {
+  word-break: break-all;
+  line-height: 1.4;
+}
+
 /* ================= カゲプロ隠しページ専用スタイル (高彩度水色・赤の図形・黒ゴシック) ================= */
 .kagepro-theme {
   background-color: #00d2ff !important; /* 彩度の高い水色（単色） */
@@ -612,4 +678,28 @@ select:disabled {
   background: transparent;
   padding: 0.5rem;
   color: #000;
+}
+
+/* カゲプロテーマ適用時のヒントスタイル自動追従 */
+.kagepro-theme .hint-toggle-btn {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 2px 2px 0px #000000;
+  font-weight: bold;
+}
+
+.kagepro-theme .hint-toggle-btn:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.kagepro-theme .hint-box {
+  background-color: #ffffff !important;
+  border: 2px solid #dc2626 !important;
+  color: #000000 !important;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.kagepro-theme .hint-label {
+  color: #dc2626 !important;
 }
