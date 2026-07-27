@@ -72,21 +72,8 @@ const defaultSongs = [
   }
 ];
 
-// 初期カゲプロ問題データ (3択例含む)
-const defaultKageproQuestions = [
-  {
-    question: "「目を眩ませる」能力を持つ、カゲプロの登場人物は誰？",
-    is3Choice: false,
-    answer: "如月モモ",
-    hint: "アイドルで、アヤノの妹"
-  },
-  {
-    question: "「サマータイムレコード」の舞台となっている夏の日の思い出の場所は何年前？",
-    is3Choice: true,
-    choices: ["10年前", "8年前", "12年前"],
-    hint: "「あれからーーの話なんだろう」"
-  }
-];
+// 初期カゲプロ問題データ（空に修正）
+const defaultKageproQuestions = [];
 
 let songDatabase = [];
 let kageproDatabase = [];
@@ -97,9 +84,15 @@ let currentKageproEditingIndex = null;
 const openManualBtn = document.getElementById("open-manual-btn");
 const closeManualBtn = document.getElementById("close-manual-btn");
 const manualModal = document.getElementById("manual-modal");
+const adminManualBtn = document.getElementById("admin-manual-btn");
 
 if (openManualBtn && manualModal) {
   openManualBtn.addEventListener("click", () => {
+    manualModal.classList.remove("hidden");
+  });
+}
+if (adminManualBtn && manualModal) {
+  adminManualBtn.addEventListener("click", () => {
     manualModal.classList.remove("hidden");
   });
 }
@@ -146,6 +139,8 @@ function setupRealtimeKageproListener() {
   });
 }
 
+const MULTI_PLAYER_COUNT = 4;
+
 let gameState = {
   questions: [],
   currentIndex: 0,
@@ -167,6 +162,7 @@ let gameState = {
   answeringPlayer: null,
   p1Attempted: false,
   p2Attempted: false,
+  multiAttempted: [],
   answerTimeSec: "0.00",
   isPaused: false
 };
@@ -361,7 +357,12 @@ document.getElementById("start-btn").addEventListener("click", () => {
       gameState.elapsedStartTime = Date.now();
       startStopwatch();
     }
-    loadQuestion();
+    
+    if (gameState.mode === "multi") {
+      loadMultiQuestion();
+    } else {
+      loadQuestion();
+    }
   }
 });
 
@@ -418,30 +419,37 @@ function loadQuestion() {
   document.getElementById("lyrics-box").innerHTML = "";
   document.getElementById("solo-input").value = "";
 
-  // ヒント表示の初期化
-  const hintDisplay = document.getElementById("hint-display");
-  const showHintBtn = document.getElementById("show-hint-btn");
-  if (hintDisplay) hintDisplay.classList.add("hidden");
-  if (showHintBtn) showHintBtn.classList.remove("hidden");
-
   addNextPhrase();
   if (gameState.phraseMode === "auto" && gameState.mode !== "timeattack") {
     startTimer();
   }
 }
 
-// ヒント表示ボタンの処理
-const showHintBtn = document.getElementById("show-hint-btn");
-if (showHintBtn) {
-  showHintBtn.addEventListener("click", () => {
-    const hintDisplay = document.getElementById("hint-display");
-    const hintContentText = document.getElementById("hint-content-text");
-    if (gameState.currentSong) {
-      hintContentText.innerText = `P名: ${gameState.currentSong.producer} / 投稿年: ${gameState.currentSong.year}年`;
-    }
-    hintDisplay.classList.remove("hidden");
-    showHintBtn.classList.add("hidden");
-  });
+function loadMultiQuestion() {
+  clearInterval(gameState.timerInterval);
+  const current = gameState.questions[gameState.currentIndex];
+  gameState.currentSong = current;
+  gameState.currentPhrases = current.lyrics[gameState.selectedPart];
+  gameState.displayedPhraseCount = 0;
+  gameState.answeringPlayer = null;
+  gameState.multiAttempted = new Array(MULTI_PLAYER_COUNT).fill(false);
+
+  document.getElementById("question-progress").innerText = `第 ${gameState.currentIndex + 1} / ${gameState.questions.length} 問`;
+  document.getElementById("lyrics-box").innerHTML = "";
+
+  updateMultiButtonStates();
+  addNextPhrase();
+  if (gameState.phraseMode === "auto") {
+    startTimer();
+  }
+}
+
+function updateMultiButtonStates() {
+  const multiBuzzBtn = document.getElementById("multi-buzz-btn");
+  if (multiBuzzBtn) {
+    const allAttempted = gameState.multiAttempted.every(val => val === true);
+    multiBuzzBtn.disabled = allAttempted;
+  }
 }
 
 function addNextPhrase() {
@@ -496,6 +504,48 @@ function handleSoloAnswer() {
 }
 
 document.getElementById("pass-btn").addEventListener("click", () => finishQuestion(false, true));
+
+// 複数人モード用早押しボタン
+const multiBuzzBtn = document.getElementById("multi-buzz-btn");
+if (multiBuzzBtn) {
+  multiBuzzBtn.addEventListener("click", () => {
+    clearInterval(gameState.timerInterval);
+    setupMultiChoices();
+  });
+}
+
+function setupMultiChoices() {
+  const overlay = document.getElementById("multi-choice-modal");
+  const choicesContainer = document.getElementById("multi-choices-container");
+  if (choicesContainer) {
+    choicesContainer.innerHTML = "";
+
+    const options = create3Choices(gameState.currentSong.title);
+    options.forEach(optText => {
+      const btn = document.createElement("button");
+      btn.className = "btn choice-btn secondary";
+      btn.innerText = optText;
+      btn.style.width = "100%";
+      btn.onclick = () => handleMultiAnswerResult(optText === gameState.currentSong.title);
+      choicesContainer.appendChild(btn);
+    });
+  }
+  if (overlay) overlay.classList.remove("hidden");
+}
+
+function handleMultiAnswerResult(isCorrect) {
+  const overlay = document.getElementById("multi-choice-modal");
+  if (overlay) overlay.classList.add("hidden");
+
+  if (isCorrect) {
+    finishQuestion(true);
+  } else {
+    alert("不正解です！");
+    if (gameState.phraseMode === "auto") {
+      startTimer();
+    }
+  }
+}
 
 function finishQuestion(isCorrect, isPass = false) {
   if (gameState.mode !== "timeattack") clearInterval(gameState.timerInterval);
@@ -558,7 +608,7 @@ function startVSTimers() {
   gameState.timeLeft = 15;
 
   const stopwatchElem = document.getElementById("vs-stopwatch-display");
-  const nextPhraseElem = document.getElementById("vs-vs-next-timer");
+  const nextPhraseElem = document.getElementById("vs-next-phrase-timer");
 
   vsMainTimer = setInterval(() => {
     if (gameState.isPaused) return;
@@ -658,7 +708,7 @@ function handleVSAnswerResult(isCorrect) {
     if (gameState.p1Attempted && gameState.p2Attempted) {
       finishVSQuestion(false);
     } else {
-      alert(`不正解！ 相手プレイヤーに解答権が移ります。`);
+      alert("不正解！ 相手プレイヤーに解答権が移ります。");
       updateVSButtonStates();
       startVSTimers();
     }
@@ -672,7 +722,7 @@ function finishVSQuestion(isCorrect) {
     document.getElementById("result-status").innerText = `⭕ ${pName} 正解！ (+1 Point)`;
     document.getElementById("result-status").style.color = (gameState.answeringPlayer === 1) ? "#ef4444" : "#3b82f6";
   } else {
-    document.getElementById("result-status").innerText = `❌ 全員不正解...`;
+    document.getElementById("result-status").innerText = "❌ 全員不正解...";
     document.getElementById("result-status").style.color = "#f87171";
   }
 
@@ -700,6 +750,9 @@ document.getElementById("next-question-btn").addEventListener("click", () => {
     if (gameState.mode === "vs") {
       showScreen("vs-game-screen");
       loadVSQuestion();
+    } else if (gameState.mode === "multi") {
+      showScreen("game-screen");
+      loadMultiQuestion();
     } else {
       showScreen("game-screen");
       loadQuestion();
