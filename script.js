@@ -83,7 +83,7 @@ const defaultKageproQuestions = [
   {
     question: "「サマータイムレコード」の舞台となっている夏の日の思い出の場所は何年前？",
     is3Choice: true,
-    choices: ["10年前", "8年前", "12年前"], // 0番目が正解
+    choices: ["10年前", "8年前", "12年前"],
     hint: "「あれからーーの話なんだろう」"
   }
 ];
@@ -92,6 +92,22 @@ let songDatabase = [];
 let kageproDatabase = [];
 let currentEditingIndex = null;
 let currentKageproEditingIndex = null;
+
+// ================= 使い方説明書モーダル用イベント =================
+const openManualBtn = document.getElementById("open-manual-btn");
+const closeManualBtn = document.getElementById("close-manual-btn");
+const manualModal = document.getElementById("manual-modal");
+
+if (openManualBtn && manualModal) {
+  openManualBtn.addEventListener("click", () => {
+    manualModal.classList.remove("hidden");
+  });
+}
+if (closeManualBtn && manualModal) {
+  closeManualBtn.addEventListener("click", () => {
+    manualModal.classList.add("hidden");
+  });
+}
 
 function setupRealtimeSongListener() {
   const songsRef = collection(db, SONGS_COLLECTION);
@@ -362,11 +378,11 @@ function setupUIForModes() {
   const manualWrapper = document.getElementById("manual-next-wrapper");
 
   if (gameState.mode === "multi") {
-    soloInputArea.classList.add("hidden");
-    multiBuzzArea.classList.remove("hidden");
+    if (soloInputArea) soloInputArea.classList.add("hidden");
+    if (multiBuzzArea) multiBuzzArea.classList.remove("hidden");
   } else {
-    soloInputArea.classList.remove("hidden");
-    multiBuzzArea.classList.add("hidden");
+    if (soloInputArea) soloInputArea.classList.remove("hidden");
+    if (multiBuzzArea) multiBuzzArea.classList.add("hidden");
   }
 
   if (gameState.phraseMode === "auto") {
@@ -402,12 +418,11 @@ function loadQuestion() {
   document.getElementById("lyrics-box").innerHTML = "";
   document.getElementById("solo-input").value = "";
 
-  if (gameState.mode === "multi") {
-    const multiBtn = document.getElementById("multi-buzz-btn");
-    multiBtn.disabled = false;
-    multiBtn.innerText = "PUSH!! (早押し)";
-    document.getElementById("multi-choice-modal").classList.add("hidden");
-  }
+  // ヒント表示の初期化
+  const hintDisplay = document.getElementById("hint-display");
+  const showHintBtn = document.getElementById("show-hint-btn");
+  if (hintDisplay) hintDisplay.classList.add("hidden");
+  if (showHintBtn) showHintBtn.classList.remove("hidden");
 
   addNextPhrase();
   if (gameState.phraseMode === "auto" && gameState.mode !== "timeattack") {
@@ -415,37 +430,18 @@ function loadQuestion() {
   }
 }
 
-document.getElementById("multi-buzz-btn").addEventListener("click", () => {
-  if (gameState.phraseMode === "auto") clearInterval(gameState.timerInterval);
-  document.getElementById("multi-buzz-btn").disabled = true;
-  document.getElementById("multi-buzz-btn").innerText = "回答中...";
-  setupMultiChoicesModal();
-});
-
-function setupMultiChoicesModal() {
-  const modal = document.getElementById("multi-choice-modal");
-  const container = document.getElementById("multi-choices-container");
-  container.innerHTML = "";
-
-  const choices = create3Choices(gameState.currentSong.title);
-  choices.forEach(optText => {
-    const btn = document.createElement("button");
-    btn.className = "btn secondary";
-    btn.innerText = optText;
-    btn.onclick = () => {
-      modal.classList.add("hidden");
-      if (optText === gameState.currentSong.title) {
-        finishQuestion(true);
-      } else {
-        alert("不正解！ボタンが復帰します。");
-        document.getElementById("multi-buzz-btn").disabled = false;
-        document.getElementById("multi-buzz-btn").innerText = "PUSH!! (早押し)";
-        if (gameState.phraseMode === "auto") startTimer();
-      }
-    };
-    container.appendChild(btn);
+// ヒント表示ボタンの処理
+const showHintBtn = document.getElementById("show-hint-btn");
+if (showHintBtn) {
+  showHintBtn.addEventListener("click", () => {
+    const hintDisplay = document.getElementById("hint-display");
+    const hintContentText = document.getElementById("hint-content-text");
+    if (gameState.currentSong) {
+      hintContentText.innerText = `P名: ${gameState.currentSong.producer} / 投稿年: ${gameState.currentSong.year}年`;
+    }
+    hintDisplay.classList.remove("hidden");
+    showHintBtn.classList.add("hidden");
   });
-  modal.classList.remove("hidden");
 }
 
 function addNextPhrase() {
@@ -562,7 +558,7 @@ function startVSTimers() {
   gameState.timeLeft = 15;
 
   const stopwatchElem = document.getElementById("vs-stopwatch-display");
-  const nextPhraseElem = document.getElementById("vs-next-phrase-timer");
+  const nextPhraseElem = document.getElementById("vs-vs-next-timer");
 
   vsMainTimer = setInterval(() => {
     if (gameState.isPaused) return;
@@ -572,7 +568,7 @@ function startVSTimers() {
     if (gameState.phraseMode === "auto") {
       const secElapsed = Math.floor(elapsed / 1000);
       const remainingSec = 15 - (secElapsed % 15);
-      nextPhraseElem.innerText = remainingSec;
+      if (nextPhraseElem) nextPhraseElem.innerText = remainingSec;
 
       if (remainingSec === 15 && secElapsed > 0 && Math.floor((elapsed - 30) / 1000) % 15 !== 0) {
         if (gameState.displayedPhraseCount < gameState.currentPhrases.length) {
@@ -780,7 +776,7 @@ document.getElementById("back-to-menu-btn").addEventListener("click", () => {
   showScreen("menu-screen");
 });
 
-// 通常管理者メニュー操作
+// 管理者メニュー操作
 const adminMsg = document.getElementById("admin-msg");
 const addTitleInput = document.getElementById("add-title");
 
@@ -795,21 +791,23 @@ document.getElementById("close-admin-btn").addEventListener("click", () => {
   showScreen("menu-screen");
 });
 
-addTitleInput.addEventListener("input", () => {
-  const title = addTitleInput.value.trim();
-  if (title === "") {
-    adminMsg.classList.add("hidden");
-    return;
-  }
-  const isDuplicate = songDatabase.some(song => song.title.toLowerCase() === title.toLowerCase());
-  if (isDuplicate) {
-    adminMsg.innerText = "⚠️ この楽曲は既に登録されています！";
-    adminMsg.className = "message error";
-    adminMsg.classList.remove("hidden");
-  } else {
-    adminMsg.classList.add("hidden");
-  }
-});
+if (addTitleInput) {
+  addTitleInput.addEventListener("input", () => {
+    const title = addTitleInput.value.trim();
+    if (title === "") {
+      adminMsg.classList.add("hidden");
+      return;
+    }
+    const isDuplicate = songDatabase.some(song => song.title.toLowerCase() === title.toLowerCase());
+    if (isDuplicate) {
+      adminMsg.innerText = "⚠️ この楽曲は既に登録されています！";
+      adminMsg.className = "message error";
+      adminMsg.classList.remove("hidden");
+    } else {
+      adminMsg.classList.add("hidden");
+    }
+  });
+}
 
 document.getElementById("add-song-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -931,10 +929,8 @@ document.getElementById("confirm-delete-btn").addEventListener("click", async ()
   }
 });
 
+// ================== カゲプロ隠しページ機能 ==================
 
-// ================== カゲロウプロジェクト隠しページ機能 ==================
-
-// 1. トリガー認証 (0815)
 document.getElementById("secret-trigger-text").addEventListener("click", () => {
   document.getElementById("kagepro-pass-input").value = "";
   document.getElementById("kagepro-auth-error").classList.add("hidden");
@@ -957,7 +953,6 @@ function verifyKageproPassword() {
   }
 }
 
-// 2. カゲプロ管理者メニュー認証 (0430)
 document.getElementById("kagepro-open-admin-btn").addEventListener("click", () => {
   document.getElementById("kagepro-admin-pass-input").value = "";
   document.getElementById("kagepro-admin-auth-error").classList.add("hidden");
@@ -988,7 +983,6 @@ document.getElementById("kagepro-close-admin-btn").addEventListener("click", () 
   showScreen("kagepro-menu-screen");
 });
 
-// 3. カゲプロ フォームUI制御 (3択切り替え)
 const addIs3Choice = document.getElementById("kagepro-add-is-3choice");
 const addSingleGroup = document.getElementById("kagepro-add-single-answer-group");
 const add3ChoiceGroup = document.getElementById("kagepro-add-3choice-group");
@@ -1017,7 +1011,6 @@ editIs3Choice.addEventListener("change", () => {
   }
 });
 
-// 4. カゲプロ問題登録
 document.getElementById("kagepro-add-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const question = document.getElementById("kagepro-add-question").value.trim();
@@ -1034,7 +1027,7 @@ document.getElementById("kagepro-add-form").addEventListener("submit", async (e)
       alert("選択肢を3つすべて入力してください。");
       return;
     }
-    newQ.choices = [c1, c2, c3]; // 0番目が正解
+    newQ.choices = [c1, c2, c3];
   } else {
     const answer = document.getElementById("kagepro-add-answer").value.trim();
     if (!answer) {
@@ -1059,7 +1052,6 @@ document.getElementById("kagepro-add-form").addEventListener("submit", async (e)
   }
 });
 
-// 5. カゲプロクイズスタート＆出題
 document.getElementById("kagepro-start-btn").addEventListener("click", () => {
   if (kageproDatabase.length === 0) {
     alert("問題が登録されていません。");
@@ -1073,10 +1065,9 @@ document.getElementById("kagepro-start-btn").addEventListener("click", () => {
   loadKageproQuestion();
 });
 
-// ヒント表示ボタンのイベントリスナー設定
-const showHintBtn = document.getElementById("kagepro-show-hint-btn");
-if (showHintBtn) {
-  showHintBtn.addEventListener("click", () => {
+const kageproShowHintBtn = document.getElementById("kagepro-show-hint-btn");
+if (kageproShowHintBtn) {
+  kageproShowHintBtn.addEventListener("click", () => {
     const hintDisplay = document.getElementById("kagepro-hint-display");
     const hintText = kageproGameState.currentQ?.hint;
     if (hintText && hintText.trim() !== "") {
@@ -1085,7 +1076,7 @@ if (showHintBtn) {
       hintDisplay.innerText = "ヒントはありません";
     }
     hintDisplay.classList.remove("hidden");
-    showHintBtn.classList.add("hidden");
+    kageproShowHintBtn.classList.add("hidden");
   });
 }
 
@@ -1096,16 +1087,15 @@ function loadKageproQuestion() {
   document.getElementById("kagepro-progress").innerText = `第 ${kageproGameState.currentIndex + 1} / ${kageproGameState.questions.length} 問`;
   document.getElementById("kagepro-lyrics-box").innerHTML = `<div class="lyric-line">${current.question}</div>`;
 
-  // ヒント表示初期化（初期状態は非表示）
   const hintDisplay = document.getElementById("kagepro-hint-display");
-  const showHintBtn = document.getElementById("kagepro-show-hint-btn");
+  const kageproShowHintBtn = document.getElementById("kagepro-show-hint-btn");
   if (hintDisplay) {
     hintDisplay.innerText = "";
     hintDisplay.classList.add("hidden");
   }
-  if (showHintBtn) {
-    showHintBtn.classList.remove("hidden");
-    showHintBtn.disabled = false;
+  if (kageproShowHintBtn) {
+    kageproShowHintBtn.classList.remove("hidden");
+    kageproShowHintBtn.disabled = false;
   }
 
   const textInputArea = document.getElementById("kagepro-text-input-area");
@@ -1118,7 +1108,6 @@ function loadKageproQuestion() {
     const container = document.getElementById("kagepro-choices-container");
     container.innerHTML = "";
 
-    // 0番目(正解)とその他2つをシャッフル
     const choicesObj = current.choices.map((txt, idx) => ({ text: txt, isCorrect: idx === 0 }));
     kageproGameState.shuffledChoices = choicesObj.sort(() => Math.random() - 0.5);
 
