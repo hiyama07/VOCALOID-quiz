@@ -278,6 +278,16 @@
       <div class="admin-section">
         <h3>登録済み楽曲一覧 (初期楽曲含む)</h3>
         <p style="font-size:0.85rem; color:#94a3b8;">タップすると詳細画面で編集・削除ができます</p>
+        
+        <div class="setting-group" style="margin-top: 0.8rem; margin-bottom: 0.8rem;">
+          <label for="admin-sort-select" style="font-size: 0.85rem;">並べ替え</label>
+          <select id="admin-sort-select" style="padding: 0.4rem; font-size: 0.85rem;">
+            <option value="default">登録順 (標準)</option>
+            <option value="title">五十音順 (タイトル)</option>
+            <option value="producer">ボカロP順</option>
+          </select>
+        </div>
+
         <div id="song-list-container" class="song-list-container"></div>
       </div>
     </div>
