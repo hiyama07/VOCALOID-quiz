@@ -390,9 +390,13 @@
 
       <div id="kagepro-lyrics-box" class="lyrics-box" style="background-color: rgba(255,255,255,0.85); border: 2px solid #000; color: #000;"></div>
 
+      <!-- 手動表示用のヒントエリア -->
       <div class="setting-group" style="background: rgba(255,255,255,0.7); padding: 0.8rem; border-radius: 8px; border: 1px solid #000;">
-        <span style="font-size: 0.85rem; color: #b91c1c; font-weight: bold; margin-bottom: 0.3rem; display:block;">💡 ヒント:</span>
-        <div id="kagepro-hint-display" style="font-size: 0.95rem; color: #000; font-weight: bold;"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+          <span style="font-size: 0.85rem; color: #b91c1c; font-weight: bold;">💡 ヒント:</span>
+          <button id="kagepro-show-hint-btn" class="btn small-btn" style="background: #dc2626; color: #fff; width: auto; padding: 0.3rem 0.8rem; font-size: 0.8rem;">ヒントを見る</button>
+        </div>
+        <div id="kagepro-hint-display" style="font-size: 0.95rem; color: #000; font-weight: bold; margin-top: 0.4rem;" class="hidden"></div>
       </div>
 
       <!-- 入力式エリア -->
