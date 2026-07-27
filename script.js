@@ -908,18 +908,35 @@ function renderSongList() {
   if (!container) return;
   container.innerHTML = "";
 
-  songDatabase.forEach((song, index) => {
+  const sortSelect = document.getElementById("admin-sort-select");
+  const sortType = sortSelect ? sortSelect.value : "default";
+
+  // 元の配列要素情報（インデックス）を保持しつつソート用配列を作成
+  let displaySongs = songDatabase.map((song, index) => ({ song, originalIndex: index }));
+
+  if (sortType === "title") {
+    displaySongs.sort((a, b) => (a.song.title || "").localeCompare(b.song.title || "", "ja"));
+  } else if (sortType === "producer") {
+    displaySongs.sort((a, b) => (a.song.producer || "").localeCompare(b.song.producer || "", "ja"));
+  }
+
+  displaySongs.forEach(({ song, originalIndex }) => {
     const item = document.createElement("div");
     item.className = "song-item";
     item.style.cursor = "pointer";
     item.innerHTML = `🎵 <strong>${song.title}</strong> (${song.producer || 'ボカロP未設定'})`;
     
     item.addEventListener("click", () => {
-      openEditScreen(index);
+      openEditScreen(originalIndex);
     });
 
     container.appendChild(item);
   });
+}
+
+const adminSortSelect = document.getElementById("admin-sort-select");
+if (adminSortSelect) {
+  adminSortSelect.addEventListener("change", renderSongList);
 }
 
 function openEditScreen(index) {
