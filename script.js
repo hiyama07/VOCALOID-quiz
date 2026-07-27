@@ -682,7 +682,7 @@ function finishVSQuestion(isCorrect) {
 
   const vsInfo = document.getElementById("vs-answer-info");
   vsInfo.classList.remove("hidden");
-  
+
   if (isCorrect) {
     document.getElementById("vs-answer-player").innerText = gameState.answeringPlayer === 1 ? "1P (赤)" : "2P (青)";
     document.getElementById("vs-answer-time").innerText = `${gameState.answerTimeSec} 秒`;
