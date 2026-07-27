@@ -3,7 +3,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
 }
 
 body {
@@ -28,13 +28,11 @@ body {
   transition: max-width 0.3s ease;
 }
 
-/* VSモード時の横画面拡張 */
 .container.landscape-mode {
   max-width: 900px !important;
   width: 95vw;
 }
 
-/* 画面切替ロジック */
 .screen {
   display: none !important;
 }
@@ -70,7 +68,7 @@ label {
   color: #cbd5e1;
 }
 
-select, input[type="text"], input[type="number"], textarea {
+select, input[type="text"], input[type="number"], input[type="password"], textarea {
   width: 100%;
   padding: 0.75rem;
   border-radius: 8px;
@@ -128,7 +126,6 @@ select:disabled {
   font-size: 0.85rem;
 }
 
-/* 複数人モード用巨大早押しボタン */
 .multi-buzz-large-btn {
   padding: 1.5rem !important;
   font-size: 1.5rem !important;
@@ -176,7 +173,6 @@ select:disabled {
   margin-bottom: 0;
 }
 
-/* ランキング表示エリア */
 .ranking-box {
   background-color: #0f172a;
   border: 1px solid #334155;
@@ -218,7 +214,6 @@ select:disabled {
   color: #4ade80;
 }
 
-/* クイズプレイ画面 */
 .game-header {
   display: flex;
   justify-content: space-between;
@@ -264,7 +259,6 @@ select:disabled {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- 2人対戦(VS)レイアウト (横画面) --- */
 .vs-layout {
   display: flex;
   gap: 1rem;
@@ -372,7 +366,6 @@ select:disabled {
   margin-bottom: 0;
 }
 
-/* 正解画面でのVS追加情報 */
 .vs-answer-info {
   margin-top: 1rem;
   padding-top: 0.8rem;
@@ -381,7 +374,6 @@ select:disabled {
   text-align: center;
 }
 
-/* VS最終勝者カード */
 .vs-final-scores {
   display: flex;
   gap: 1rem;
@@ -408,7 +400,6 @@ select:disabled {
   color: #fff;
 }
 
-/* 管理者画面 */
 .admin-section {
   background-color: #0f172a;
   padding: 1rem;
@@ -501,7 +492,6 @@ select:disabled {
   margin-bottom: 0.5rem;
 }
 
-/* モーダル */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -526,4 +516,100 @@ select:disabled {
 
 .hidden {
   display: none !important;
+}
+
+/* ================= カゲプロ隠しページ専用スタイル (高彩度水色・赤の図形・黒ゴシック) ================= */
+.kagepro-theme {
+  background-color: #00d2ff !important; /* 彩度の高い水色（単色） */
+  color: #000000 !important;
+  font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'メイリオ', Meiryo, sans-serif !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.kagepro-menu-content {
+  position: relative;
+  z-index: 10;
+}
+
+/* 浮遊する赤の六角形・三角形 */
+.kagepro-shape {
+  position: absolute;
+  fill: #dc2626;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shape-hexagon {
+  width: 60px;
+  height: 60px;
+}
+
+.shape-triangle {
+  width: 50px;
+  height: 50px;
+}
+
+.pos1 { top: 8%; left: 5%; animation: floatAnim 6s ease-in-out infinite; }
+.pos2 { top: 15%; right: 8%; animation: floatAnim 8s ease-in-out infinite 1s; }
+.pos3 { bottom: 12%; left: 8%; animation: floatAnim 7s ease-in-out infinite 2s; }
+.pos4 { bottom: 20%; right: 5%; animation: floatAnim 9s ease-in-out infinite 0.5s; }
+
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(10deg); }
+}
+
+.kagepro-title {
+  color: #000000 !important;
+  font-weight: 900 !important;
+  font-size: 1.8rem;
+  letter-spacing: -0.02em;
+  text-shadow: 2px 2px 0px #ffffff;
+}
+
+.kagepro-btn-primary {
+  background: #dc2626 !important; /* 赤 */
+  color: #ffffff !important;
+  border: 2px solid #000 !important;
+  font-weight: bold;
+  box-shadow: 3px 3px 0px #000;
+}
+
+.kagepro-btn-primary:active {
+  box-shadow: 1px 1px 0px #000;
+  transform: translate(2px, 2px);
+}
+
+.kagepro-subtle-btn {
+  color: #000000 !important;
+  font-weight: bold;
+}
+
+.kagepro-auth-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.kagepro-search-bar {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 320px;
+  background: #ffffff;
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0px #000;
+}
+
+.kagepro-search-bar input {
+  border: none;
+  background: transparent;
+  padding: 0.5rem;
+  color: #000;
 }
