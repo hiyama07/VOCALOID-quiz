@@ -1,566 +1,705 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ボカロ歌詞イントロクイズ</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-  <div class="container">
-    <!-- 1. メニュー画面 -->
-    <div id="menu-screen" class="screen active">
-      <h1>ボカロ歌詞クイズ</h1>
-      
-      <div class="setting-group">
-        <label for="category-select">カテゴリー</label>
-        <select id="category-select">
-          <option value="all">全曲</option>
-          <option value="halloffame">殿堂入り / 伝説入り</option>
-          <option value="era">年代別</option>
-        </select>
-      </div>
-
-      <div id="era-group" class="setting-group hidden">
-        <label for="era-select">年代選択</label>
-        <select id="era-select">
-          <option value="~2011">~ 2011年 (初期)</option>
-          <option value="2012~2015">2012 ~ 2015年</option>
-          <option value="2016~2018">2016 ~ 2018年</option>
-          <option value="2019~2021">2019 ~ 2021年</option>
-          <option value="2022~">2022年 ~</option>
-        </select>
-      </div>
-
-      <div class="setting-group">
-        <label for="part-select">出題パート</label>
-        <select id="part-select">
-          <option value="intro">歌い始め</option>
-          <option value="chorus">サビ</option>
-          <option value="prechorus">ラスサビ前</option>
-        </select>
-      </div>
-
-      <div id="phrase-mode-group" class="setting-group">
-        <label for="phrase-mode-select">フレーズ進行</label>
-        <select id="phrase-mode-select">
-          <option value="auto">自動 (15秒ごとに進行)</option>
-          <option value="manual">手動 (ボタンで進める)</option>
-        </select>
-      </div>
-
-      <div class="setting-group">
-        <label for="player-mode-select">プレイモード</label>
-        <select id="player-mode-select">
-          <option value="solo">1人プレイ (入力式)</option>
-          <option value="multi">複数人モード (早押し3択)</option>
-          <option value="vs">⚔️ 2人対戦モード (横画面早押し)</option>
-          <option value="timeattack">⏱️ タイムアタック (1人・50問固定)</option>
-        </select>
-      </div>
-
-      <div class="setting-group">
-        <label for="count-select">出題数</label>
-        <select id="count-select">
-          <option value="5">5問</option>
-          <option value="10">10問</option>
-          <option value="20">20問</option>
-          <option value="50">50問</option>
-        </select>
-      </div>
-
-      <div id="ranking-box" class="ranking-box hidden">
-        <h3>🏆 50問完走 TOP3 クリアタイム</h3>
-        <ul id="ranking-list" class="ranking-list"></ul>
-      </div>
-
-      <button id="start-btn" class="btn primary">ゲームスタート！</button>
-
-      <div class="admin-link-wrapper">
-        <button id="open-admin-btn" class="subtle-link-btn">管理者メニュー</button>
-      </div>
-    </div>
-
-    <!-- 2. 通常(1人 / 複数人早押し) クイズ画面 -->
-    <div id="game-screen" class="screen">
-      <div class="game-header">
-        <span id="question-progress">第 1 / 10 問</span>
-        <div id="timer-display" class="timer">15</div>
-        <button id="quit-btn" class="quit-btn">中断</button>
-      </div>
-
-      <div id="lyrics-box" class="lyrics-box"></div>
-
-      <div id="manual-next-wrapper" class="hidden">
-        <button id="next-phrase-btn" class="btn secondary">次のフレーズを表示</button>
-      </div>
-
-      <!-- 1人用（文字入力） -->
-      <div id="solo-answer-input-area" class="setting-group">
-        <input type="text" id="solo-input" placeholder="曲名を入力してください" autocomplete="off">
-        <div class="btn-group">
-          <button id="solo-submit-btn" class="btn primary">回答する</button>
-          <button id="pass-btn" class="btn secondary">パス</button>
-        </div>
-      </div>
-
-      <!-- 複数人用（早押しボタン） -->
-      <div id="multi-answer-buzz-area" class="setting-group hidden">
-        <button id="multi-buzz-btn" class="btn primary multi-buzz-large-btn">PUSH!! (早押し)</button>
-      </div>
-    </div>
-
-    <!-- 複数人モード用の3択モーダル -->
-    <div id="multi-choice-modal" class="modal-overlay hidden">
-      <div class="modal-content">
-        <h3 style="margin-bottom:0.8rem;">回答を選択</h3>
-        <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
-        <div id="multi-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
-      </div>
-    </div>
-
-    <!-- 3. 横画面 2人対戦クイズ画面 (VS) -->
-    <div id="vs-game-screen" class="screen">
-      <div class="vs-layout">
-        <div class="vs-side vs-p1">
-          <div class="vs-player-label">1P (PLAYER 1)</div>
-          <div class="vs-score-box">Pt: <span id="vs-p1-score">0</span></div>
-          <button id="vs-p1-btn" class="vs-buzz-btn p1-btn">PUSH!!</button>
-        </div>
-
-        <div class="vs-center">
-          <div class="vs-header">
-            <span id="vs-progress">第 1 / 10 問</span>
-            <div class="vs-timers-container">
-              <div class="stopwatch-text">経過時間: <span id="vs-stopwatch-display">00:00.00</span></div>
-              <div class="next-phrase-text">次のフレーズ表示まで: <span id="vs-next-phrase-timer">15</span>秒</div>
-            </div>
-            <button id="vs-pause-btn" class="quit-btn">一時中断</button>
-          </div>
-          <div id="vs-lyrics-box" class="lyrics-box vs-lyrics"></div>
-        </div>
-
-        <div class="vs-side vs-p2">
-          <div class="vs-player-label">2P (PLAYER 2)</div>
-          <div class="vs-score-box">Pt: <span id="vs-p2-score">0</span></div>
-          <button id="vs-p2-btn" class="vs-buzz-btn p2-btn">PUSH!!</button>
-        </div>
-      </div>
-
-      <div id="vs-choice-overlay" class="modal-overlay hidden">
-        <div class="modal-content">
-          <h3 id="vs-answering-title">1P の回答</h3>
-          <p style="font-size:0.85rem; color:#94a3b8; margin-bottom:1rem; text-align:center;">正しい楽曲を選んでください</p>
-          <div id="vs-choices-container" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
-        </div>
-      </div>
-
-      <div id="vs-pause-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="text-align:center;">
-          <h3>⏸️ 一時中断中</h3>
-          <div style="margin-top: 1.5rem; display:flex; flex-direction:column; gap:0.8rem;">
-            <button id="vs-resume-btn" class="btn primary">ゲームを再開</button>
-            <button id="vs-quit-game-btn" class="btn secondary">メニューに戻る</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 画面回転促しポップアップモーダル -->
-    <div id="vs-orient-modal" class="modal-overlay hidden">
-      <div class="modal-content" style="text-align:center;">
-        <h2 style="font-size:1.3rem; margin-bottom:1rem;">📱 画面を横にしてください</h2>
-        <p style="font-size:0.9rem; color:#cbd5e1; margin-bottom:1.5rem;">対戦モードは端末を横向きにして2人で遊ぶモードです。</p>
-        <button id="vs-orient-ok-btn" class="btn primary">準備OK</button>
-      </div>
-    </div>
-
-    <!-- 4. 各問題の結果画面 -->
-    <div id="answer-screen" class="screen">
-      <h2 id="result-status">⭕ 正解！</h2>
-      <div class="song-detail">
-        <h3 id="detail-title">曲名</h3>
-        <p>ボカロP: <span id="detail-producer">P名</span></p>
-        <p>投稿年: <span id="detail-year">2000年</span></p>
-        <div id="vs-answer-info" class="vs-answer-info hidden">
-          <p>早押しプレイヤー: <strong id="vs-answer-player" style="color:#38bdf8;">1P</strong></p>
-          <p>回答タイム: <strong id="vs-answer-time" style="color:#f59e0b;">1.23 秒</strong></p>
-        </div>
-      </div>
-      <button id="next-question-btn" class="btn primary">次の問題へ</button>
-    </div>
-
-    <!-- 5. 最終結果画面 -->
-    <div id="final-screen" class="screen">
-      <h2>結果発表</h2>
-      
-      <div id="solo-final-result" class="final-score-text">
-        <p>あなたの正解数は...</p>
-        <div class="highlight-score"><span id="final-score">0</span> / <span id="final-total">10</span></div>
-      </div>
-
-      <div id="vs-final-result" class="final-score-text hidden">
-        <h3 id="vs-winner-text" style="font-size:1.8rem; margin-bottom:1rem;">🏆 WINNER: 1P !</h3>
-        <div class="vs-final-scores">
-          <div class="vs-score-card p1-card">
-            <span>1P</span>
-            <strong><span id="vs-final-p1-score">0</span> pt</strong>
-          </div>
-          <div class="vs-score-card p2-card">
-            <span>2P</span>
-            <strong><span id="vs-final-p2-score">0</span> pt</strong>
-          </div>
-        </div>
-      </div>
-
-      <div id="time-attack-result" class="time-attack-result hidden">
-        <div id="new-record-badge" class="new-record-badge hidden">🎉 TOP3 ランクイン！</div>
-        <p>50問クリアタイム: <strong id="final-clear-time" style="color:#f59e0b; font-family:monospace; font-size:1.3rem;">00:00.00</strong></p>
-      </div>
-
-      <button id="back-to-menu-btn" class="btn primary">メニューに戻る</button>
-    </div>
-
-    <!-- 6. 管理者メニュー画面 -->
-    <div id="admin-screen" class="screen">
-      <div class="form-header">
-        <h2>管理者メニュー</h2>
-        <button id="close-admin-btn" class="btn secondary small-btn">戻る</button>
-      </div>
-
-      <div id="admin-msg" class="message hidden"></div>
-
-      <div class="admin-section">
-        <h3 id="admin-add-song-title">新規楽曲の追加</h3>
-        <form id="add-song-form">
-          <div class="form-group">
-            <label>タイトル *</label>
-            <input type="text" id="add-title" required>
-          </div>
-          <div class="form-group">
-            <label>ボカロP *</label>
-            <input type="text" id="add-producer" required>
-          </div>
-          <div class="form-group">
-            <label>投稿年 *</label>
-            <input type="number" id="add-year" value="2020" required>
-          </div>
-          <div class="form-group checkbox-group">
-            <label><input type="checkbox" id="add-halloffame"> 殿堂入り/伝説入り</label>
-          </div>
-          <div class="form-group">
-            <label>歌い始め歌詞 (1行ずつ改行)</label>
-            <textarea id="add-intro" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label>サビ歌詞 (1行ずつ改行)</label>
-            <textarea id="add-chorus" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label>ラスサビ前歌詞 (1行ずつ改行)</label>
-            <textarea id="add-prechorus" rows="3"></textarea>
-          </div>
-          <button type="submit" class="btn primary">楽曲をデータベースへ登録</button>
-        </form>
-      </div>
-
-      <hr class="divider">
-
-      <div class="admin-section">
-        <h3>登録済み楽曲一覧 (初期楽曲含む)</h3>
-        <p style="font-size:0.85rem; color:#94a3b8;">タップすると詳細画面で編集・削除ができます</p>
-        
-        <div class="setting-group" style="margin-top: 0.8rem; margin-bottom: 0.8rem;">
-          <label for="admin-sort-select" style="font-size: 0.85rem;">並べ替え</label>
-          <select id="admin-sort-select" style="padding: 0.4rem; font-size: 0.85rem;">
-            <option value="default">登録順 (標準)</option>
-            <option value="title">五十音順 (タイトル)</option>
-            <option value="producer">ボカロP順</option>
-          </select>
-        </div>
-
-        <div id="song-list-container" class="song-list-container"></div>
-      </div>
-
-      <div style="text-align: center; margin-top: 1.5rem;">
-        <span id="secret-trigger-text" style="font-size: 0.7rem; color: #475569; cursor: pointer; user-select: none;">Are you ready？</span>
-      </div>
-    </div>
-
-    <!-- 7. 楽曲編集専用画面 -->
-    <div id="edit-song-screen" class="screen">
-      <div class="form-header">
-        <h2>楽曲情報の編集</h2>
-        <button id="cancel-edit-btn" class="btn secondary small-btn">キャンセル</button>
-      </div>
-
-      <form id="edit-song-form" class="admin-section">
-        <div class="form-group">
-          <label>タイトル *</label>
-          <input type="text" id="edit-title" required>
-        </div>
-        <div class="form-group">
-          <label>ボカロP *</label>
-          <input type="text" id="edit-producer" required>
-        </div>
-        <div class="form-group">
-          <label>投稿年 *</label>
-          <input type="number" id="edit-year" required>
-        </div>
-        <div class="form-group checkbox-group">
-          <label><input type="checkbox" id="edit-halloffame"> 殿堂入り/伝説入り</label>
-        </div>
-        <div class="form-group">
-          <label>歌い始め歌詞 (1行ずつ改行)</label>
-          <textarea id="edit-intro" rows="3"></textarea>
-        </div>
-        <div class="form-group">
-          <label>サビ歌詞 (1行ずつ改行)</label>
-          <textarea id="edit-chorus" rows="3"></textarea>
-        </div>
-        <div class="form-group">
-          <label>ラスサビ前歌詞 (1行ずつ改行)</label>
-          <textarea id="edit-prechorus" rows="3"></textarea>
-        </div>
-
-        <div class="btn-group" style="margin-top: 1.5rem;">
-          <button type="submit" class="btn primary">変更を保存</button>
-          <button type="button" id="open-delete-modal-btn" class="btn danger">この楽曲を削除</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- ================= 隠し：カゲロウプロジェクトクイズ関連画面 ================= -->
-
-    <!-- 秘匿パスワード入力画面 -->
-    <div id="kagepro-auth-screen" class="screen">
-      <div class="kagepro-auth-box">
-        <p style="font-family: monospace; color: #94a3b8; font-size: 0.9rem; margin-bottom: 0.5rem;">pass</p>
-        <div class="kagepro-search-bar">
-          <input type="password" id="kagepro-pass-input" placeholder="パスワードを入力" autocomplete="off">
-          <button id="kagepro-go-btn" class="btn primary" style="width: auto; padding: 0.75rem 1.2rem;">GO</button>
-        </div>
-        <p id="kagepro-auth-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem;" class="hidden">パスワードが違います</p>
-        <button id="kagepro-auth-back" class="subtle-link-btn" style="margin-top: 2rem;">戻る</button>
-      </div>
-    </div>
-
-    <!-- カゲロウプロジェクトクイズ ホーム画面 -->
-    <div id="kagepro-menu-screen" class="screen kagepro-theme">
-      <!-- 赤の装飾（六角形・三角形） -->
-      <svg class="kagepro-shape shape-hexagon pos1" viewBox="0 0 100 100"><polygon points="50 3, 93 25, 93 75, 50 97, 7 75, 7 25" /></svg>
-      <svg class="kagepro-shape shape-triangle pos2" viewBox="0 0 100 100"><polygon points="50 15, 90 85, 10 85" /></svg>
-      <svg class="kagepro-shape shape-hexagon pos3" viewBox="0 0 100 100"><polygon points="50 3, 93 25, 93 75, 50 97, 7 75, 7 25" /></svg>
-      <svg class="kagepro-shape shape-triangle pos4" viewBox="0 0 100 100"><polygon points="50 15, 90 85, 10 85" /></svg>
-
-      <div class="kagepro-menu-content">
-        <h1 class="kagepro-title">カゲロウプロジェクトクイズ</h1>
-        
-        <div style="margin: 2rem 0;">
-          <button id="kagepro-start-btn" class="btn kagepro-btn-primary">クイズスタート</button>
-        </div>
-
-        <div style="margin-top: 3rem; text-align: center;">
-          <button id="kagepro-open-admin-btn" class="subtle-link-btn kagepro-subtle-btn">管理者メニュー</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- カゲプロ 管理者パスワード入力モーダル -->
-    <div id="kagepro-admin-auth-modal" class="modal-overlay hidden">
-      <div class="modal-content" style="background:#0f172a; border: 2px solid #ef4444;">
-        <h3 style="color:#ef4444; margin-bottom:1rem;">🔒 管理者認証</h3>
-        <p style="font-size:0.85rem; color:#cbd5e1; margin-bottom:1rem;">パスワードを入力してください</p>
-        <input type="password" id="kagepro-admin-pass-input" placeholder="パスワード" style="margin-bottom:1rem;">
-        <p id="kagepro-admin-auth-error" style="color:#ef4444; font-size:0.8rem; margin-bottom:1rem;" class="hidden">パスワードが正しくありません</p>
-        <div class="btn-group">
-          <button id="kagepro-admin-auth-submit" class="btn primary">認証</button>
-          <button id="kagepro-admin-auth-cancel" class="btn secondary">キャンセル</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- カゲロウプロジェクトクイズ プレイ画面 -->
-    <div id="kagepro-game-screen" class="screen kagepro-theme">
-      <div class="game-header">
-        <span id="kagepro-progress" style="color: #000; font-weight: bold;">第 1 / 5 問</span>
-        <button id="kagepro-quit-btn" class="quit-btn" style="border-color: #000; color: #000; font-weight: bold;">中断</button>
-      </div>
-
-      <div id="kagepro-lyrics-box" class="lyrics-box" style="background-color: rgba(255,255,255,0.85); border: 2px solid #000; color: #000;"></div>
-
-      <!-- 手動表示用のヒントエリア -->
-      <div class="setting-group" style="background: rgba(255,255,255,0.7); padding: 0.8rem; border-radius: 8px; border: 1px solid #000;">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-          <span style="font-size: 0.85rem; color: #b91c1c; font-weight: bold;">💡 ヒント:</span>
-          <button id="kagepro-show-hint-btn" class="btn small-btn" style="background: #dc2626; color: #fff; width: auto; padding: 0.3rem 0.8rem; font-size: 0.8rem;">ヒントを見る</button>
-        </div>
-        <div id="kagepro-hint-display" style="font-size: 0.95rem; color: #000; font-weight: bold; margin-top: 0.4rem;" class="hidden"></div>
-      </div>
-
-      <!-- 入力式エリア -->
-      <div id="kagepro-text-input-area" class="setting-group">
-        <input type="text" id="kagepro-solo-input" placeholder="答えを入力してください" autocomplete="off" style="background: #fff; color: #000; border: 2px solid #000;">
-        <div class="btn-group">
-          <button id="kagepro-solo-submit-btn" class="btn kagepro-btn-primary">回答する</button>
-          <button id="kagepro-pass-btn" class="btn secondary" style="background: #e2e8f0; color: #000; border: 1px solid #000;">パス</button>
-        </div>
-      </div>
-
-      <!-- 3択式エリア -->
-      <div id="kagepro-3choice-area" class="setting-group hidden">
-        <div id="kagepro-choices-container" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
-        <button id="kagepro-pass-btn-3choice" class="btn secondary" style="background: #e2e8f0; color: #000; border: 1px solid #000; margin-top: 0.5rem;">パス</button>
-      </div>
-    </div>
-
-    <!-- カゲロウプロジェクトクイズ 結果画面 -->
-    <div id="kagepro-answer-screen" class="screen kagepro-theme">
-      <h2 id="kagepro-result-status" style="color: #000; font-weight: bold;">⭕ 正解！</h2>
-      <div class="song-detail" style="background: rgba(255,255,255,0.85); border: 2px solid #000; border-radius: 8px; padding: 1rem; margin: 1.5rem 0;">
-        <h3 id="kagepro-detail-title" style="color: #000; font-weight: bold;">曲名</h3>
-        <p style="color: #334155; margin-top: 0.5rem; font-weight: bold;">正解の答え</p>
-      </div>
-      <button id="kagepro-next-question-btn" class="btn kagepro-btn-primary">次の問題へ</button>
-    </div>
-
-    <!-- カゲロウプロジェクトクイズ 最終結果画面 -->
-    <div id="kagepro-final-screen" class="screen kagepro-theme">
-      <h2 style="color: #000; font-weight: bold;">結果発表</h2>
-      <div class="final-score-text">
-        <p style="color: #000; font-weight: bold;">あなたの成績は...</p>
-        <div class="highlight-score" style="color: #dc2626;"><span id="kagepro-final-score">0</span> / <span id="kagepro-final-total">5</span></div>
-      </div>
-      <button id="kagepro-back-to-menu-btn" class="btn kagepro-btn-primary">メニューに戻る</button>
-    </div>
-
-    <!-- カゲロウプロジェクト 管理者メニュー画面 -->
-    <div id="kagepro-admin-screen" class="screen kagepro-theme">
-      <div class="form-header">
-        <h2 style="color: #000; font-size: 1.2rem; font-weight: bold;">カゲプロ管理者メニュー</h2>
-        <button id="kagepro-close-admin-btn" class="btn secondary small-btn" style="background: #e2e8f0; color: #000; border: 1px solid #000;">戻る</button>
-      </div>
-
-      <div id="kagepro-admin-msg" class="message hidden"></div>
-
-      <div class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
-        <h3 style="color: #000; font-weight: bold;">新規問題の追加</h3>
-        <form id="kagepro-add-form">
-          <div class="form-group">
-            <label style="color: #000; font-weight: bold;">問題 (歌詞など) *</label>
-            <textarea id="kagepro-add-question" rows="3" required style="background: #fff; border-color: #000; color:#000;"></textarea>
-          </div>
-
-          <div class="form-group checkbox-group">
-            <label style="color: #000; font-weight: bold;"><input type="checkbox" id="kagepro-add-is-3choice"> 3択問題にする</label>
-          </div>
-
-          <!-- 入力式用正解欄 -->
-          <div id="kagepro-add-single-answer-group" class="form-group">
-            <label style="color: #000; font-weight: bold;">解答 *</label>
-            <input type="text" id="kagepro-add-answer" style="background: #fff; border-color: #000; color:#000;">
-          </div>
-
-          <!-- 3択式用選択肢欄 -->
-          <div id="kagepro-add-3choice-group" class="form-group hidden">
-            <label style="color: #000; font-weight: bold;">① 正解の入力 *</label>
-            <input type="text" id="kagepro-add-choice1" placeholder="正解を入力" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
-            <label style="color: #000; font-weight: bold;">② 不正解選択肢1 *</label>
-            <input type="text" id="kagepro-add-choice2" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
-            <label style="color: #000; font-weight: bold;">③ 不正解選択肢2 *</label>
-            <input type="text" id="kagepro-add-choice3" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000;">
-          </div>
-
-          <div class="form-group">
-            <label style="color: #000; font-weight: bold;">ヒント *</label>
-            <input type="text" id="kagepro-add-hint" required style="background: #fff; border-color: #000; color:#000;">
-          </div>
-          <button type="submit" class="btn kagepro-btn-primary">問題を登録</button>
-        </form>
-      </div>
-
-      <hr class="divider" style="border-color: #000;">
-
-      <div class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
-        <h3 style="color: #000; font-weight: bold;">登録済み問題一覧</h3>
-        <p style="font-size:0.85rem; color:#334155;">タップすると編集・削除ができます</p>
-        <div id="kagepro-list-container" class="song-list-container"></div>
-      </div>
-    </div>
-
-    <!-- カゲロウプロジェクト 問題編集画面 -->
-    <div id="kagepro-edit-screen" class="screen kagepro-theme">
-      <div class="form-header">
-        <h2 style="color: #000; font-weight: bold;">問題情報の編集</h2>
-        <button id="kagepro-cancel-edit-btn" class="btn secondary small-btn" style="background: #e2e8f0; color:#000; border:1px solid #000;">キャンセル</button>
-      </div>
-
-      <form id="kagepro-edit-form" class="admin-section" style="background: rgba(255,255,255,0.85); border: 2px solid #000;">
-        <div class="form-group">
-          <label style="color: #000; font-weight: bold;">問題 *</label>
-          <textarea id="kagepro-edit-question" rows="3" required style="background: #fff; border-color: #000; color:#000;"></textarea>
-        </div>
-
-        <div class="form-group checkbox-group">
-          <label style="color: #000; font-weight: bold;"><input type="checkbox" id="kagepro-edit-is-3choice"> 3択問題にする</label>
-        </div>
-
-        <!-- 入力式用正解欄 -->
-        <div id="kagepro-edit-single-answer-group" class="form-group">
-          <label style="color: #000; font-weight: bold;">解答 *</label>
-          <input type="text" id="kagepro-edit-answer" style="background: #fff; border-color: #000; color:#000;">
-        </div>
-
-        <!-- 3択式用選択肢欄 -->
-        <div id="kagepro-edit-3choice-group" class="form-group hidden">
-          <label style="color: #000; font-weight: bold;">① 正解の入力 *</label>
-          <input type="text" id="kagepro-edit-choice1" placeholder="正解を入力" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
-          <label style="color: #000; font-weight: bold;">② 不正解選択肢1 *</label>
-          <input type="text" id="kagepro-edit-choice2" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000; margin-bottom: 0.5rem;">
-          <label style="color: #000; font-weight: bold;">③ 不正解選択肢2 *</label>
-          <input type="text" id="kagepro-edit-choice3" placeholder="不正解の選択肢" style="background: #fff; border-color: #000; color:#000;">
-        </div>
-
-        <div class="form-group">
-          <label style="color: #000; font-weight: bold;">ヒント *</label>
-          <input type="text" id="kagepro-edit-hint" required style="background: #fff; border-color: #000; color:#000;">
-        </div>
-
-        <div class="btn-group" style="margin-top: 1.5rem;">
-          <button type="submit" class="btn kagepro-btn-primary">変更を保存</button>
-          <button type="button" id="kagepro-open-delete-modal-btn" class="btn danger">この問題を削除</button>
-        </div>
-      </form>
-    </div>
-
-  </div>
-
-  <!-- 8. 削除確認ポップアップ (モーダル) -->
-  <div id="delete-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-      <h3>⚠️ 楽曲の削除</h3>
-      <p>本当に「<span id="delete-target-title"></span>」を削除しますか？</p>
-      <p style="font-size:0.85rem; color:#f87171;">※この操作は取り消せません。</p>
-      <div class="modal-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
-        <button id="cancel-delete-btn" class="btn secondary">キャンセル</button>
-        <button id="confirm-delete-btn" class="btn danger">削除する</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- カゲプロ削除確認モーダル -->
-  <div id="kagepro-delete-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="background: #fff; border: 2px solid #dc2626;">
-      <h3 style="color: #dc2626;">⚠️ 問題の削除</h3>
-      <p style="color: #000; font-weight: bold;">本当にこの問題を削除しますか？</p>
-      <div class="modal-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
-        <button id="kagepro-cancel-delete-btn" class="btn secondary">キャンセル</button>
-        <button id="kagepro-confirm-delete-btn" class="btn danger">削除する</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="script.js"></script>
-</body>
-</html>
+/* 基本スタイル */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+}
+
+body {
+  background-color: #0f172a;
+  color: #f8fafc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 0.5rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  background-color: #1e293b;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+  transition: max-width 0.3s ease;
+}
+
+.container.landscape-mode {
+  max-width: 900px !important;
+  width: 95vw;
+}
+
+.screen {
+  display: none !important;
+}
+
+.screen.active {
+  display: block !important;
+}
+
+h1, h2, h3 {
+  text-align: center;
+  color: #38bdf8;
+}
+
+h1 {
+  margin-bottom: 1.2rem;
+}
+
+.setting-group, .form-group {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.checkbox-group {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+label {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+select, input[type="text"], input[type="number"], input[type="password"], textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background-color: #0f172a;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+}
+
+select:focus, input:focus, textarea:focus {
+  border-color: #38bdf8;
+}
+
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #1e293b;
+}
+
+.btn {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+.btn.primary {
+  background-color: #38bdf8;
+  color: #0f172a;
+}
+
+.btn.secondary {
+  background-color: #334155;
+  color: #f8fafc;
+}
+
+.btn.danger {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.btn.small-btn {
+  width: auto;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.multi-buzz-large-btn {
+  padding: 1.5rem !important;
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+  box-shadow: 0 6px 0 #0284c7;
+}
+
+.multi-buzz-large-btn:active {
+  box-shadow: 0 2px 0 #0284c7;
+  transform: translateY(4px);
+}
+
+.multi-buzz-large-btn:disabled {
+  background-color: #475569 !important;
+  box-shadow: none !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.subtle-link-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 1rem;
+  width: 100%;
+  text-align: center;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.form-header h2 {
+  margin-bottom: 0;
+}
+
+.ranking-box {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.ranking-box h3 {
+  font-size: 0.95rem;
+  color: #f59e0b;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.ranking-list {
+  list-style: none;
+  font-size: 0.88rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ranking-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem;
+  background-color: #1e293b;
+  border-radius: 4px;
+}
+
+.ranking-rank {
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+.ranking-time {
+  font-family: monospace;
+  color: #4ade80;
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.timer {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #f59e0b;
+  font-family: monospace;
+}
+
+.quit-btn {
+  background: none;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lyrics-box {
+  background-color: #0f172a;
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 120px;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.lyric-line {
+  font-size: 1.05rem;
+  line-height: 1.4;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.vs-layout {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+  min-height: 280px;
+}
+
+.vs-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem;
+  border-radius: 12px;
+  background-color: #0f172a;
+  border: 2px solid #334155;
+}
+
+.vs-p1 { border-color: #ef4444; }
+.vs-p2 { border-color: #3b82f6; }
+
+.vs-player-label {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.vs-p1 .vs-player-label { color: #ef4444; }
+.vs-p2 .vs-player-label { color: #3b82f6; }
+
+.vs-score-box {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #f8fafc;
+  margin: 0.5rem 0;
+}
+
+.vs-buzz-btn {
+  width: 100%;
+  height: 120px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.4);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.vs-buzz-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.4);
+}
+
+.vs-buzz-btn.p1-btn { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.vs-buzz-btn.p2-btn { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+
+.vs-buzz-btn:disabled {
+  background: #475569 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.vs-center {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.vs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.vs-timers-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stopwatch-text {
+  font-family: monospace;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #f59e0b;
+}
+
+.next-phrase-text {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.next-phrase-text span {
+  color: #38bdf8;
+  font-weight: bold;
+}
+
+.vs-lyrics {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.vs-answer-info {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed #334155;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.vs-final-scores {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.vs-score-card {
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  background-color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+
+.vs-score-card.p1-card { border: 2px solid #ef4444; color: #ef4444; }
+.vs-score-card.p2-card { border: 2px solid #3b82f6; color: #3b82f6; }
+
+.vs-score-card strong {
+  font-size: 1.8rem;
+  margin-top: 0.3rem;
+  color: #fff;
+}
+
+.admin-section {
+  background-color: #0f172a;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.admin-section h3 {
+  text-align: left;
+  font-size: 1rem;
+  margin-bottom: 0.8rem;
+  color: #e2e8f0;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #334155;
+  margin: 1.5rem 0;
+}
+
+.song-list-container {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.song-item {
+  padding: 0.6rem;
+  background-color: #1e293b;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  border: 1px solid #334155;
+  transition: background-color 0.2s;
+}
+
+.song-item:hover {
+  background-color: #334155;
+}
+
+.message {
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.message.error {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid #ef4444;
+}
+
+.message.success {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+  border: 1px solid #4ade80;
+}
+
+.final-score-text {
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.highlight-score {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+.time-attack-result {
+  margin-top: 1rem;
+  padding: 0.8rem;
+  background-color: #0f172a;
+  border-radius: 8px;
+  border: 1px solid #334155;
+}
+
+.new-record-badge {
+  display: inline-block;
+  background-color: #f59e0b;
+  color: #0f172a;
+  font-weight: bold;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #1e293b;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ================= ヒント手動表示用スタイル (追加領域) ================= */
+.hint-container {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hint-toggle-btn {
+  background-color: #134e4a;
+  color: #2dd4bf;
+  border: 1px solid #14b8a6;
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.hint-toggle-btn:hover {
+  background-color: #0f766e;
+  color: #ccfbf1;
+}
+
+.hint-toggle-btn:disabled {
+  background-color: #334155;
+  color: #64748b;
+  border-color: #475569;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.hint-box {
+  background-color: #0f172a;
+  border: 1px dashed #14b8a6;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+  color: #2dd4bf;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.hint-box.hidden {
+  display: none !important;
+}
+
+.hint-label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #5eead4;
+  margin-bottom: 0.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hint-content {
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+/* ================= カゲプロ隠しページ専用スタイル (高彩度水色・赤の図形・黒ゴシック) ================= */
+.kagepro-theme {
+  background-color: #00d2ff !important; /* 彩度の高い水色（単色） */
+  color: #000000 !important;
+  font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', 'メイリオ', Meiryo, sans-serif !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.kagepro-menu-content {
+  position: relative;
+  z-index: 10;
+}
+
+/* 浮遊する赤の六角形・三角形 */
+.kagepro-shape {
+  position: absolute;
+  fill: #dc2626;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.shape-hexagon {
+  width: 60px;
+  height: 60px;
+}
+
+.shape-triangle {
+  width: 50px;
+  height: 50px;
+}
+
+.pos1 { top: 8%; left: 5%; animation: floatAnim 6s ease-in-out infinite; }
+.pos2 { top: 15%; right: 8%; animation: floatAnim 8s ease-in-out infinite 1s; }
+.pos3 { bottom: 12%; left: 8%; animation: floatAnim 7s ease-in-out infinite 2s; }
+.pos4 { bottom: 20%; right: 5%; animation: floatAnim 9s ease-in-out infinite 0.5s; }
+
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(10deg); }
+}
+
+.kagepro-title {
+  color: #000000 !important;
+  font-weight: 900 !important;
+  font-size: 1.8rem;
+  letter-spacing: -0.02em;
+  text-shadow: 2px 2px 0px #ffffff;
+}
+
+.kagepro-btn-primary {
+  background: #dc2626 !important; /* 赤 */
+  color: #ffffff !important;
+  border: 2px solid #000 !important;
+  font-weight: bold;
+  box-shadow: 3px 3px 0px #000;
+}
+
+.kagepro-btn-primary:active {
+  box-shadow: 1px 1px 0px #000;
+  transform: translate(2px, 2px);
+}
+
+.kagepro-subtle-btn {
+  color: #000000 !important;
+  font-weight: bold;
+}
+
+.kagepro-auth-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.kagepro-search-bar {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 320px;
+  background: #ffffff;
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0px #000;
+}
+
+.kagepro-search-bar input {
+  border: none;
+  background: transparent;
+  padding: 0.5rem;
+  color: #000;
+}
+
+/* カゲプロテーマ適用時のヒントスタイル自動追従 */
+.kagepro-theme .hint-toggle-btn {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 2px 2px 0px #000000;
+  font-weight: bold;
+}
+
+.kagepro-theme .hint-toggle-btn:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.kagepro-theme .hint-box {
+  background-color: #ffffff !important;
+  border: 2px solid #dc2626 !important;
+  color: #000000 !important;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.kagepro-theme .hint-label {
+  color: #dc2626 !important;
+}
